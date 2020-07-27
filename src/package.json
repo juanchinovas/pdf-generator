@@ -1,0 +1,19 @@
+{
+  "name": "pdf-generator",
+  "version": "1.0.0",
+  "description": "NodeJs plugin to generate PDF from HTML template using Vuejs and puppeteer",
+  "main": "index.js",
+  "keywords": [
+    "PDF",
+    "Template",
+    "HTML",
+    "VueJs",
+    "Puppeteer"
+  ],
+  "author": "juanchinovas",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^9.0.1",
+    "puppeteer-core": "^5.2.1"
+  }
+}

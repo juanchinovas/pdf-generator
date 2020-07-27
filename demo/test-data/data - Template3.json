@@ -1,0 +1,18 @@
+{
+    "templateName": "Template3",
+    "parameters": {
+        "param1": "param1 value",
+        "param2": 1000.23,
+        "param3": "param3 value",
+        "param4": "param4 value",
+        "param5": "param5 value",
+        "param6": "param6 value",
+        "param7": {
+            "keyArray": [45, 12, 54],
+            "keyObject": {
+                "name": "Lorem",
+                "lastName": "Ipsum"
+            }
+        }
+    }
+}
