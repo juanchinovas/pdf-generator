@@ -1,14 +1,18 @@
 {
-  "name": "pdf-generator",
+  "name": "html-pdf-generator",
   "version": "1.0.0",
   "description": "NodeJs plugin to generate PDF from HTML template using Vuejs and puppeteer",
   "main": "index.js",
   "keywords": [
-    "PDF",
-    "Template",
-    "HTML",
-    "VueJs",
-    "Puppeteer"
+    "pdf",
+    "template",
+    "html",
+    "vueJs",
+    "puppeteer",
+    "pdf-creator",
+    "nodejs",
+    "html-pdf-generator",
+    "pdf-generator"
   ],
   "author": {
 		"name": "juanchinovas",
@@ -16,15 +20,16 @@
 	},
   "license": "ISC",
   "repository": {
-		"type": "git",
-		"url": "https://github.com/juanchinovas/pdf-generator.git"
+    "type": "git",
+    "url": "git+https://github.com/juanchinovas/pdf-generator.git"
   },
   "bugs": {
-		"url": "https://github.com/juanchinovas/pdf-generator/issues"
-	},
-	"homepage": "https://github.com/juanchinovas/pdf-generator",
+    "url": "https://github.com/juanchinovas/pdf-generator/issues"
+  },
+  "homepage": "https://github.com/juanchinovas/pdf-generator",
   "dependencies": {
     "fs-extra": "^9.0.1",
     "puppeteer-core": "^5.2.1"
-  }
+  },
+  "devDependencies": {}
 }
