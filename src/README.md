@@ -15,7 +15,7 @@ See postman [collection](../demo/pdf-generator-test.postman_collection.json) for
 
 The options param is an object with the properties to config puppeteer and set the printing margin. See `.env` file in the demo app:
 
-```json
+```javascript
 {
     "PORT": number, // Port used in NodeJs service
     "FILE_DIR": string, // <TemporalHTMLFileDir>,

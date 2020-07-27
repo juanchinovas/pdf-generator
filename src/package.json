@@ -10,8 +10,19 @@
     "VueJs",
     "Puppeteer"
   ],
-  "author": "juanchinovas",
+  "author": {
+		"name": "juanchinovas",
+		"email": "juanchinovas@gmail.com"
+	},
   "license": "ISC",
+  "repository": {
+		"type": "git",
+		"url": "https://github.com/juanchinovas/pdf-generator.git"
+  },
+  "bugs": {
+		"url": "https://github.com/juanchinovas/pdf-generator/issues"
+	},
+	"homepage": "https://github.com/juanchinovas/pdf-generator",
   "dependencies": {
     "fs-extra": "^9.0.1",
     "puppeteer-core": "^5.2.1"
