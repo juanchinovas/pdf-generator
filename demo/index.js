@@ -1,7 +1,8 @@
 const compression = require("compression");
 const express = require("express");
 const bodyParser = require("body-parser");
-const pdfProcessor = require("pdf-generator");
+const pdfProcessor = require("html-pdf-generator");
+const fs = require("fs");
 
 const app = express();
 const options = ({
@@ -26,7 +27,11 @@ app.use(bodyParser.text({ type: ["text/html", "text/plain"] }));
 
 app.get("/test-pdf/:templateName", (req, res) => {
     try {
-        const data = require(`./test-data/data - ${req.params.templateName}.json`);
+        let data = {noData: true};
+        const fileTemplate = `./test-data/data - ${req.params.templateName}.json`;
+        if (fs.existsSync(fileTemplate)) {
+            data = require(fileTemplate);
+        }
         const parameters = parseDataFromArrayToObject(data.parameters);
         const templateData = {
             $templateName: req.params["templateName"],
@@ -54,6 +59,10 @@ app.get("/test-pdf/:templateName", (req, res) => {
 });
 
 app.post("/documents", (req, res) => {
+    if (req.body === null || req.body === undefined) {
+        res.status(400).send({ message: "Empty request body", code: -20 });
+        return;
+    }
     const data = req.body;
     let pdfGenPromise = null;
     if (data.urlTemplate || typeof(data) === "string") {
@@ -129,7 +138,8 @@ app.listen(PORT, () =>
     console.log(`Example app listening at ${host}`)
 );
 
-process.on("exit", function() {
+process.on("exit", function(code) {
+    console.log(`About to exit with code: ${code}`);
     pdfGenerator && pdfGenerator.dispose();
     pdfGenerator = null;
 });

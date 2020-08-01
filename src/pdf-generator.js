@@ -6,18 +6,18 @@ let _options, templateHelper, browser, page;
 
 const pageEvents = {
     'pageerror': err => {
-        logger.readLog({text: err, type: "ERROR"});
+        logger.writeLog({text: err, type: "ERROR"});
     },
     'console': message => {
-        logger.readLog({text: message.text(), type: message.type().substr(0, 3).toUpperCase()});
+        logger.writeLog({text: message.text(), type: message.type().substr(0, 3).toUpperCase()});
     },
     'response': response => {
         if (!(/;base64,/ig.test(response.url()))) {
-            logger.readLog({text: `${response.status()} ${response.url()}`, type: "LOG"});
+            logger.writeLog({text: `${response.status()} ${response.url()}`, type: "LOG"});
         }
     },
     'requestfailed': request => {
-        logger.readLog({text: `${request.failure().errorText} ${request.url()}`, type: "ERROR"});
+        logger.writeLog({text: `${request.failure().errorText} ${request.url()}`, type: "ERROR"});
     }
 }
 
@@ -31,17 +31,17 @@ async function init() {
     }
 
     if (!!!_options.URL_BROWSER) {
-        logger.readLog({text: "No target browser found", type: "LOG"});
+        logger.writeLog({text: "No target browser found", type: "LOG"});
         throw "No target browser found";
     }
 
-    logger.readLog({text: "Launching Browser", type: "LOG"});
+    logger.writeLog({text: "Launching Browser", type: "LOG"});
     browser = await puppeteer.launch({
         executablePath: _options.URL_BROWSER,
         product: _options.BROWSER_NAME
-    });
+    });    
 
-    logger.readLog({text: "Starting Page", type: "LOG"});
+    logger.writeLog({text: "Starting Page", type: "LOG"});
     page = await browser.newPage();
 
     for (let event in pageEvents) {
@@ -50,6 +50,7 @@ async function init() {
         }
     }
 };
+
 
 /**
  * Dispose everything, remove page events and close the headless browser
@@ -68,7 +69,7 @@ async function closeBrowser() {
             }
         }
 
-        logger.readLog({text: "Closing Browser", type: "LOG"});
+        logger.writeLog({text: "Closing Browser", type: "LOG"});
         page = null;
     }
 
@@ -100,13 +101,13 @@ function processTemplate(data) {
                 urlTemplate = tempFile.urlTemplate || urlTemplate;
             }
 
-            logger.readLog({text: `Loading ${urlTemplate}`, type: "LOG"});
+            logger.writeLog({text: `Loading ${urlTemplate}`, type: "LOG"});
             await page.goto(urlTemplate, { waitUntil: 'networkidle0' });
 
             const _footerHTML = await __getFooterTemplateFromTemplate(page);
             const _headerHTML = await __getHeaderTemplateFromTemplate(page);
 
-            logger.readLog({text: `Creating PDF`, type: "LOG"});
+            logger.writeLog({text: `Creating PDF`, type: "LOG"});
             const pdfFileBuffer = await page.pdf({
                 path: `${_options.PDF_DIR}/${tempFile.fileName}.pdf`,
                 format: 'Letter',
@@ -126,7 +127,7 @@ function processTemplate(data) {
             templateHelper.deleteFile(`${_options.FILE_DIR}/${tempFile.fileName}.html`);
             
         } catch (err) {
-            logger.readLog({text: err.stack, type: "ERROR"});
+            logger.writeLog({text: err.stack, type: "ERROR"});
             rej(err.message);
         }
 
@@ -150,7 +151,7 @@ async function __getFooterTemplateFromTemplate(page) {
             return t;
         });
     } catch (error) {
-        logger.readLog({text: error.message + ". No footer template found", type: "WARN"});
+        logger.writeLog({text: error.message + ". No footer template found", type: "WARN"});
     }
 
     return ({ footerTemplate: `<div style="margin: 0 13mm;display: flex; align-items: center; width:100%;justify-content: flex-end;">
@@ -178,7 +179,7 @@ async function __getHeaderTemplateFromTemplate(page) {
         });
         
     } catch (error) {
-        logger.readLog({text: error.message + ". No header template found", type: "WARN"});
+        logger.writeLog({text: error.message + ". No header template found", type: "WARN"});
     }
 
     return ({ headerTemplate: `<span></span>`, marginTop: _options.printingMarginTop });

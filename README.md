@@ -1,15 +1,17 @@
-# Pdf-Generator
+# Pdf-Generator (html-pdf-generator on NPM)
 
 [![NPM version][npm-image]][npm-url]
 [![Downloads][downloads-image]][npm-url]
 
-[npm-image]:http://img.shields.io/npm/v/pdf-genarator.svg
-[npm-url]:https://npmjs.org/package/pdf-genarator
-[downloads-image]:http://img.shields.io/npm/dm/pdf-genarator.svg
+[npm-image]:http://img.shields.io/npm/v/html-pdf-generator.svg
+[npm-url]:https://npmjs.org/package/html-pdf-generator
+[downloads-image]:http://img.shields.io/npm/dm/html-pdf-generator.svg
 
 A [NodeJs](https://nodejs.org) plugin to generate PDF from HTML template using [Puppeteer](https://github.com/puppeteer/puppeteer) and [Vue.js](https://vuejs.org/).
 
 See postman [collection](../demo/pdf-generator-test.postman_collection.json) for mare example,
+
+> If you need more functionality in your HTML tamplate you can add the &nbsp;&nbsp; `mixins: Array`&nbsp;&nbsp; properties to the window object to add a Vue.js mixin object.
 
 ## API
 
@@ -23,10 +25,10 @@ The options param is an object with the properties to config puppeteer and set t
     "URL_BROWSER": string, // <DirToExecuteChromeOrFirefox>,
     "BROWSER_NAME":  string, // chrome|firefox - default chrome
     "TEMPLATE_DIR":  string, // <TemplateDir>, // templates
-    "printingMarginLeft": any, // default 18mm,
-    "printingMarginRight": any, // default 18mm,
-    "printingMarginTop": any, // default 18mm,
-    "printingMarginBottom": any // default 18mm
+    "printingMarginLeft": string | number, // default 18mm,
+    "printingMarginRight": string | number, // default 18mm,
+    "printingMarginTop": string | number, // default 18mm,
+    "printingMarginBottom": string | number // default 18mm
 }
 ```
 
@@ -43,8 +45,8 @@ The function `pdfGenerator` returns:
 
 ```javascript
 {
-    processTemplate: function({$templateName: string,$parameters: any, $extraParams: any}),
-    dispose: function()
+    processTemplate: Function({$templateName: string, $parameters: any, $extraParams: any}),
+    dispose: Function
 }
 ```
 

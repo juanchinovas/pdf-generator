@@ -12,7 +12,7 @@
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "express": "^4.17.1",
-    "pdf-generator": "file:../src"
+    "html-pdf-generator": "file:../src"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"
@@ -27,7 +27,7 @@
       "PORT": 3000,
       "FILE_DIR": "./temp",
       "PDF_DIR": "./temp/pdfs",
-      "URL_BROWSER": "/opt/google/chrome/google-chrome",
+      "URL_BROWSER": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
       "TEMPLATE_DIR": "./templates",
       "BROWSER_NAME": "chrome"
     }

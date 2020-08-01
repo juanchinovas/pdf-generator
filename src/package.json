@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "description": "NodeJs plugin to generate PDF from HTML template using Vuejs and puppeteer",
   "main": "index.js",
+  "scripts": {
+    "start": "cd ../demo/ && npm start",
+    "build2npm": "cd ../compiled/ && npm run run-gulp",
+    "config": "npm run build2npm && npm run start",
+    "pack": "cd ../compiled/ && npm run run-pack",
+    "publish": "cd ../compiled/ && npm run run-publish"
+  },
   "keywords": [
     "pdf",
     "template",
@@ -15,9 +22,9 @@
     "pdf-generator"
   ],
   "author": {
-		"name": "juanchinovas",
-		"email": "juanchinovas@gmail.com"
-	},
+    "name": "juanchinovas",
+    "email": "juanchinovas@gmail.com"
+  },
   "license": "ISC",
   "repository": {
     "type": "git",
@@ -28,7 +35,6 @@
   },
   "homepage": "https://github.com/juanchinovas/pdf-generator",
   "dependencies": {
-    "fs-extra": "^9.0.1",
     "puppeteer-core": "^5.2.1"
   },
   "devDependencies": {}

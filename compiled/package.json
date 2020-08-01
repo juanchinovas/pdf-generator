@@ -1,0 +1,20 @@
+{
+  "name": "build-npm-package-gulp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "gulpfile.js",
+  "scripts": {
+    "run-gulp": "gulp",
+    "run-pack": "gulp npm-pack",
+    "run-publish": "gulp npm-publish"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-bump": "^3.2.0",
+    "gulp-clean": "^0.4.0",
+    "gulp-shell": "^0.8.0",
+    "gulp-terser": "^1.2.1"
+  }
+}

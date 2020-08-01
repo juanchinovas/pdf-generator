@@ -9,21 +9,27 @@ let _options;
  */
 function readTemplateContent(data) {
     if (!data) {
-        logger.readLog({ text: "No data provided", type: "ERROR" });
+        logger.writeLog({
+            text: "No data provided",
+            type: "ERROR"
+        });
         throw "No data provided";
     }
-    return new Promise(function(res, rej) {
+    return new Promise(function (res, rej) {
         //The template data is a raw HTML
         if (typeof data === "string") {
-            res({ template: data, templateName: "custom_template" });
+            res({
+                template: data,
+                templateName: "custom_template"
+            });
             return;
         }
 
         //The template is a external file
-        if (data.urlTemplate && !data.$templateName) {
+        if (data.urlTemplate) {
             res({
                 template: data.urlTemplate,
-                templateName: "external_template"
+                templateName: data.$templateName || "external_template"
             });
             return;
         }
@@ -35,12 +41,14 @@ function readTemplateContent(data) {
                 if (!("noData" in data)) {
                     var param = _getTemplateParameters(template);
                     param.extraParams = data.$extraParams;
+                    let templateParts = template.split(/<\/body>\n*(<\/html>)*/gm);
 
-                    template += `
+                    templateParts.push(`
                             <script src="https://cdn.jsdelivr.net/npm/vue"></script>
                             <script>
                                 window.onload = function () {
-                                    var app = new Vue({
+                                    new Vue({
+                                        mixins: window.mixins || [],
                                         el: '#app',
                                         data: ${JSON.stringify(
                                             Object.assign(
@@ -50,11 +58,12 @@ function readTemplateContent(data) {
                                         )}
                                     });
                                 }
-                            </script>`;
+                            </script></body></html>`);
+                    template = templateParts.join('');
                 }
 
                 res({
-                    template: `${template} </body></html>`,
+                    template,
                     templateName: data.$templateName
                 });
             })
@@ -71,12 +80,17 @@ function saveOnTemp(templateName, template) {
     var fileName = `${templateName}_${new Date().getTime()}`;
 
     if (templateName === "external_template") {
-        return Promise.resolve({ fileName, urlTemplate: template });
+        return Promise.resolve({
+            fileName,
+            urlTemplate: template
+        });
     }
 
     return fileHelper
         .saveFile(`${_options.FILE_DIR}/${fileName}.html`, template)
-        .then(() => ({ fileName }));
+        .then(() => ({
+            fileName
+        }));
 }
 
 /**
@@ -129,12 +143,20 @@ function getArrayParams(matches, template) {
     return obj;
 }
 
-module.exports.initialize = function(options) {
-    const { FILE_DIR, PDF_DIR, TEMPLATE_DIR } = options;
-    _options = { FILE_DIR, PDF_DIR, TEMPLATE_DIR };
+module.exports.initialize = function (options) {
+    const {
+        FILE_DIR,
+        PDF_DIR,
+        TEMPLATE_DIR
+    } = options;
+    _options = {
+        FILE_DIR,
+        PDF_DIR,
+        TEMPLATE_DIR
+    };
 
     return {
-        prepareTemplate: function(data) {
+        prepareTemplate: function (data) {
             return fileHelper
                 .ensureExitsDir([_options.FILE_DIR, _options.PDF_DIR])
                 .then(() =>
@@ -153,7 +175,7 @@ module.exports.initialize = function(options) {
     };
 };
 
-module.exports.getTemplateParameters = function(templateName) {
+module.exports.getTemplateParameters = function (templateName) {
     return readTemplateContent({
         $templateName: templateName,
         noData: true

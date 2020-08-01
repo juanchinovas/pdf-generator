@@ -1,5 +1,6 @@
 node_modules/
-node_modules/**
 logs/
-temp/**
+temp/
+compiled/npm/**
 package-lock.json
+.DS_store

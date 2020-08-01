@@ -1,17 +1,27 @@
-const fse = require("fs-extra");
+const fs = require("fs");
 const logger = require("./logger");
 
 module.exports.readFile = function(fileDir) {
-    return fse.readFile(fileDir).catch(err => {
-        logger.readLog({ text: err, type: "ERROR" });
-        return err;
+    return new Promise( (res, rej) => {
+        fs.readFile(fileDir, (err, data) => {
+            if (err) {
+                rej(errorHandler(err));
+                return;
+            }
+            res(data);
+        } )
     });
 };
 
 module.exports.saveFile = function(fileDir, data) {
-    return fse.writeFile(fileDir, data).catch(err => {
-        logger.readLog({ text: err, type: "ERROR" });
-        return err;
+    return new Promise( (res, rej) => {
+        fs.writeFile(fileDir, data, (err) => {
+            if (err) {
+                rej(errorHandler(err));
+                return;
+            }
+            res(true);
+        } )
     });
 };
 
@@ -21,7 +31,7 @@ module.exports.saveFile = function(fileDir, data) {
 module.exports.ensureExitsDir = function(dirs) {
     return new Promise((res, rej) => {
         if (!Array.isArray(dirs)) {
-            logger.readLog({
+            logger.writeLog({
                 text: "No array of dirs provided",
                 type: "ERROR"
             });
@@ -29,20 +39,37 @@ module.exports.ensureExitsDir = function(dirs) {
             return;
         }
 
-        Promise.all(dirs.map(d => fse.ensureDir(d)))
+        Promise.all(dirs.map(d => _promesifyMkdir(d)))
             .then(res)
             .catch(rej);
     });
 };
 
 module.exports.deleteFile = function(file) {
-    let exists = fse.existsSync(file);
+    let exists = fs.existsSync(file);
     if (exists) {
-        logger.readLog({ text: `Delete file ${file}`, type: "LOG" });
-        fse.unlink(file, function(err) {
+        logger.writeLog({ text: `Delete file ${file}`, type: "LOG" });
+        fs.unlink(file, function(err) {
             if (err) {
-                logger.readLog({ text: err, type: "ERROR" });
+                errorHandler(err);
             }
         });
     }
 };
+
+
+function _promesifyMkdir(path) {
+    return new Promise( (res, rej) => {
+        fs.mkdir(path, {recursive: true}, (err) => {
+            if(err) {
+                return rej(errorHandler(err));
+            }
+            res(true);
+        });
+    });
+}
+
+function errorHandler(err) {
+    logger.writeLog({ text: err, type: "ERROR" });
+    return err;
+}
