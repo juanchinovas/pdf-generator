@@ -11,51 +11,53 @@ A [NodeJs](https://nodejs.org) plugin to generate PDF from HTML template using [
 
 See postman [collection](../demo/pdf-generator-test.postman_collection.json) for mare example,
 
-> If you need more functionality in your HTML tamplate you can add the &nbsp;&nbsp; `mixins: Array`&nbsp;&nbsp; properties to the window object to add a Vue.js mixin object.
+> If you need more functionality in your HTML tamplate you can add the &nbsp;&nbsp; `mixins: Array`&nbsp;&nbsp; properties to the window object to extend Vue.js default functionality.
 
 ## API
 
-The options param is an object with the properties to config puppeteer and set the printing margin. See `.env` file in the demo app:
+The `options` param is an object with the properties to config puppeteer and set the printing margin. See `.env` file in the demo app:
 
-```javascript
+```typescript
 {
-    "PORT": number, // Port used in NodeJs service
-    "FILE_DIR": string, // <TemporalHTMLFileDir>,
-    "PDF_DIR": string, // <TemporalPDFFileDir>,
-    "URL_BROWSER": string, // <DirToExecuteChromeOrFirefox>,
-    "BROWSER_NAME":  string, // chrome|firefox - default chrome
-    "TEMPLATE_DIR":  string, // <TemplateDir>, // templates
-    "printingMarginLeft": string | number, // default 18mm,
-    "printingMarginRight": string | number, // default 18mm,
-    "printingMarginTop": string | number, // default 18mm,
-    "printingMarginBottom": string | number // default 18mm
+    interface Options {
+        URL_BROWSER: string; // <DirToExecuteChromeOrFirefox>
+        FILE_DIR: string; // <TemporalHTMLFileDir>
+        PDF_DIR: string; // <TemporalPDFFileDir>
+        TEMPLATE_DIR: string; // <TemplateDir> - templates
+        PORT: number; // Port used in NodeJs service
+        printingMarginTop?: string | number; // default 18mm
+        printingMarginBottom?: string | number; // default 18mm
+        printingMarginLeft?: string | number; // default 18mm
+        printingMarginRight?: string | number; // default 18mm
+        BROWSER_NAME?: string; // chrome|firefox - default chrome
+    }
 }
 ```
 
 ```javascript
 /**
- * Initialize PDF generator
+ * Create a PDF Generator instance
  *
  * @param {*} options
  * @returns {*} pdfGenerator
  */
-function pdfGenerator(options); 
+function pdfGenerator(options: Options); 
 ```
 The function `pdfGenerator` returns:
 
-```javascript
+```typescript
 {
-    processTemplate: Function({$templateName: string, $parameters: any, $extraParams: any}),
-    dispose: Function
+    processTemplate: (data: {$templateName: string, $parameters: any, $extraParams: any}) => Promise<{fileName: string, buffer: Buffer}>;
+    dispose: () => Promise<void>;
 }
 ```
 
-```javascript
+```typescript
 /**
- * Read all parameters from a template
+ * Real all the params found in a HTML template with the Vue.js template syntax.
  *
  * @param string templateName
- * @returns Promise<{*}>
+ * @returns Promise<{[key: string]: any}>
  */
-function getTemplateParameters(templateName)
+function getTemplateParameters(templateName: string): Promise<{[key: string]: any}>;
 ```

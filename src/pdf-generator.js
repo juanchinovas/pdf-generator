@@ -8,8 +8,13 @@ const pageEvents = {
     'pageerror': err => {
         logger.writeLog({text: err, type: "ERROR"});
     },
+    'error': err => {
+        logger.writeLog({text: err, type: "ERROR"});
+    },
     'console': message => {
-        logger.writeLog({text: message.text(), type: message.type().substr(0, 3).toUpperCase()});
+        const [jsHandle] = message.args();
+        const { description } = jsHandle._remoteObject;
+        logger.writeLog({text: description || message.text(), type: message.type().substr(0, 3).toUpperCase()});
     },
     'response': response => {
         if (!(/;base64,/ig.test(response.url()))) {

@@ -8,6 +8,8 @@ const fs = require("fs");
 const destDir = "../compiled/npm";
 
 gulp.task("clean-dest", function () {
+    if (!fs.existsSync("./npm")) return Promise.resolve();
+
     return gulp.src("./npm")
         .pipe(clean())
 });
@@ -26,7 +28,7 @@ gulp.task("compile", function () {
 gulp.task('bump-version', function () {
     return gulp.src(`${destDir}/package.json`)
         .pipe(bump({
-            type: 'minor'
+            type: 'path'
         }))
         .pipe(gulp.dest(destDir));
 });
