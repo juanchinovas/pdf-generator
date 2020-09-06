@@ -15,7 +15,7 @@ gulp.task("clean-dest", function () {
 });
 
 gulp.task("copy-files", shell.task(`cp ../README.md ../src/index.d.ts ../src/package.json ${destDir}`));
-gulp.task("npm-install", shell.task(`cd ${destDir} && npm i`));
+gulp.task("npm-install", shell.task(`cd ${destDir} && npm i --production`));
 gulp.task("npm-pack", shell.task(`cd ${destDir} && npm pack`));
 gulp.task("npm-publish", shell.task(`cd ${destDir} && npm publish`));
 

@@ -9,29 +9,27 @@ let _options;
  */
 function readTemplateContent(data) {
     if (!data) {
-        logger.writeLog({
-            text: "No data provided",
-            type: "ERROR"
-        });
-        throw "No data provided";
+        throw new Error("No data provided");
     }
     return new Promise(function (res, rej) {
         //The template data is a raw HTML
         if (typeof data === "string") {
-            res({
+            return res({
                 template: data,
                 templateName: "custom_template"
             });
-            return;
         }
 
         //The template is a external file
         if (data.urlTemplate) {
-            res({
+            return res({
                 template: data.urlTemplate,
                 templateName: data.$templateName || "external_template"
             });
-            return;
+        }
+
+        if (!data.$templateName) {
+            throw new Error("No templateName provided");
         }
 
         fileHelper

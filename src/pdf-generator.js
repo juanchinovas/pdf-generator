@@ -13,7 +13,7 @@ const pageEvents = {
     },
     'console': message => {
         const [jsHandle] = message.args();
-        const { description } = jsHandle._remoteObject;
+        const { description } = jsHandle && jsHandle._remoteObject || {};
         logger.writeLog({text: description || message.text(), type: message.type().substr(0, 3).toUpperCase()});
     },
     'response': response => {
@@ -36,8 +36,7 @@ async function init() {
     }
 
     if (!!!_options.URL_BROWSER) {
-        logger.writeLog({text: "No target browser found", type: "LOG"});
-        throw "No target browser found";
+        throw new Error("No target browser found");
     }
 
     logger.writeLog({text: "Launching Browser", type: "LOG"});

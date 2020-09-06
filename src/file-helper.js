@@ -5,8 +5,7 @@ module.exports.readFile = function(fileDir) {
     return new Promise( (res, rej) => {
         fs.readFile(fileDir, (err, data) => {
             if (err) {
-                rej(errorHandler(err));
-                return;
+                return rej(errorHandler(err));
             }
             res(data);
         } )
@@ -17,8 +16,7 @@ module.exports.saveFile = function(fileDir, data) {
     return new Promise( (res, rej) => {
         fs.writeFile(fileDir, data, (err) => {
             if (err) {
-                rej(errorHandler(err));
-                return;
+                return rej(errorHandler(err));
             }
             res(true);
         } )
@@ -35,8 +33,7 @@ module.exports.ensureExitsDir = function(dirs) {
                 text: "No array of dirs provided",
                 type: "ERROR"
             });
-            rej("No array of dirs provided");
-            return;
+            return rej("No array of dirs provided");
         }
 
         Promise.all(dirs.map(d => _promesifyMkdir(d)))
@@ -51,7 +48,7 @@ module.exports.deleteFile = function(file) {
         logger.writeLog({ text: `Delete file ${file}`, type: "LOG" });
         fs.unlink(file, function(err) {
             if (err) {
-                errorHandler(err);
+                throw errorHandler(err);
             }
         });
     }
