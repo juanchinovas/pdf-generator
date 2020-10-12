@@ -110,9 +110,9 @@ function processTemplate(data) {
 
             const _footerHTML = await __getFooterTemplateFromTemplate(page);
             const _headerHTML = await __getHeaderTemplateFromTemplate(page);
-
+            
             logger.writeLog({text: `Creating PDF`, type: "LOG"});
-            const pdfFileBuffer = await page.pdf({
+            const pdfOptions = {
                 path: `${_options.PDF_DIR}/${tempFile.fileName}.pdf`,
                 format: 'Letter',
                 printBackground: true,
@@ -125,7 +125,13 @@ function processTemplate(data) {
                     left: _options.printingMarginLeft,
                     right: _options.printingMarginRight
                 }
-            });
+            };
+            if (data.$extraParams && data.$extraParams.orientacion && data.$extraParams.orientacion === "horizontal") {
+                pdfOptions.landscape = true;
+                page.addStyleTag({'content': '@page { size: A4 landscape; }'});
+            }
+
+            const pdfFileBuffer = await page.pdf(pdfOptions);
 
             res({fileName: `${tempFile.fileName}.pdf`, buffer: pdfFileBuffer });
             templateHelper.deleteFile(`${_options.FILE_DIR}/${tempFile.fileName}.html`);
