@@ -1,4 +1,3 @@
-const logger = require("./logger");
 const fileHelper = require("./file-helper");
 
 let _options;
@@ -29,7 +28,7 @@ function readTemplateContent(data) {
         }
 
         if (!data.$templateName) {
-            throw new Error("No templateName provided");
+            throw new Error("No $templateName provided");
         }
 
         fileHelper
@@ -42,19 +41,26 @@ function readTemplateContent(data) {
                     let templateParts = template.split(/<\/body>\n*(<\/html>)*/gm);
 
                     templateParts.push(`
-                            <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+                            ${_options.libs.map(s => '<script src="' + s + '"></script>').join('\n')}
                             <script>
                                 window.onload = function () {
-                                    new Vue({
-                                        mixins: window.mixins || [],
-                                        el: '#app',
+                                    var vueInit = {
+                                        mixins: window.mixins,
                                         data: ${JSON.stringify(
                                             Object.assign(
                                                 param,
                                                 data.$parameters
                                             )
                                         )}
-                                    });
+                                    };
+
+                                    if (Vue.createApp) { // Vue v3
+                                        Vue.createApp(vueInit).mount('#app');
+                                    } else {
+                                        vueInit.el = '#app';
+                                        new Vue(vueInit);
+                                    }
+                                    
                                 }
                             </script></body></html>`);
                     template = templateParts.join('');
@@ -68,7 +74,6 @@ function readTemplateContent(data) {
             .catch(rej);
     });
 }
-
 /**
  * Save the template with its data as html file to be consume for the headless browser
  * @param {*} templateName
@@ -97,14 +102,27 @@ function saveOnTemp(templateName, template) {
  */
 function _getTemplateParameters(template) {
     var matched = "";
-    var regex = /(\{\{\s*([a-zA-Z0-9_]+)\s*\}\})|(?:v-for=.+in\s)([a-zA-Z0-9_]+)/gi;
+    var regex = /((?:\{\{)\s*([\d\w$]+)\s*(?:\}\}))|(?:v-for=.+in\s)([\d\w$]+)|(?:\{\{)\s*[\d\w$\.]+\(([\d\w$]+),*[\w\s\d"'-]*\)(?:\}\})|(?:\{\{)([\d$\w]+)\.([\d$\w]+)(?:\}\})/mgi;
     var objResult = {};
     var key = "";
+    let matches = null;
 
     while ((matched = regex.exec(template))) {
         if (matched) {
-            key = matched[2] || matched[3];
-            objResult[key] = matched[1] || [getArrayParams(matched, template)];
+            matches = matched.slice(0).filter(f => f);
+            if (matches[0].match("v-for")) {
+                key = matches[matches.length - 1];
+                if (objResult[key] && Array.isArray(objResult[key])) {
+                    objResult[key] = [Object.assign(objResult[key][0], getObjectParams(matches, template))];
+                    continue;
+                } 
+                objResult[key] = [getObjectParams(matches, template)];
+            } else if (matches[0].match(/(?:\{\{)([\d$\w]+)\.([\d$\w]+)(?:\}\})/)) {
+                objResult[matches[1]] = getObjectParams(matches[1], template);
+            } else if (isNaN(matches[matches.length - 1])) {
+                key = matches.pop();
+                objResult[key] =  `{{${key}}}`;
+            }
         }
     }
 
@@ -116,16 +134,15 @@ function _getTemplateParameters(template) {
  * @param {*} matches
  * @param {*} template
  */
-function getArrayParams(matches, template) {
-    if (matches && !matches[0].match("v-for")) return "";
-
-    var arrayName = new RegExp(
-        `"\\(*([a-z]+),*.*\\)*\\sin\\s${matches[3]}`,
-        "ig"
-    ).exec(matches[0]);
-    var arrayParam = new RegExp(`${arrayName[1]}\\.(.+)\\}\\}`, "ig");
+function getObjectParams(matches, template) {
+   var arrayName = new RegExp(
+        `"\\(*([\\d\\w$]+),*.*\\)*\\sin\\s${matches[matches.length - 1]}`,
+        "igm"
+    ).exec(matches[0]) || [null, matches];
+    var regex = new RegExp(`${arrayName[1]}\\.([\\d\\w$]+)`, "igm");
     var obj = {};
-    while ((matched = arrayParam.exec(template))) {
+
+    while ((matched = regex.exec(template))) {
         if (matched) {
             let param = matched.slice(0).pop();
             if (param) {
@@ -142,16 +159,15 @@ function getArrayParams(matches, template) {
 }
 
 module.exports.initialize = function (options) {
-    const {
-        FILE_DIR,
-        PDF_DIR,
-        TEMPLATE_DIR
-    } = options;
     _options = {
-        FILE_DIR,
-        PDF_DIR,
-        TEMPLATE_DIR
+        FILE_DIR: options.FILE_DIR,
+        PDF_DIR: options.PDF_DIR,
+        TEMPLATE_DIR: options.TEMPLATE_DIR,
+        libs: (options.libs || [])
     };
+    if (_options.libs && Array.isArray(_options.libs) && _options.libs.filter(s => /vue(\.min\.?js)*/.test(s)).length === 0) {
+        _options.libs.unshift("https://cdn.jsdelivr.net/npm/vue");
+    }
 
     return {
         prepareTemplate: function (data) {

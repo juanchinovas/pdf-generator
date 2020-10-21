@@ -6,23 +6,38 @@ let _options, templateHelper, browser, page;
 
 const pageEvents = {
     'pageerror': err => {
-        logger.writeLog({text: err, type: "ERROR"});
+        logger.writeLog({ text: err, type: "ERROR" });
     },
     'error': err => {
-        logger.writeLog({text: err, type: "ERROR"});
+        logger.writeLog({ text: err, type: "ERROR" });
     },
     'console': message => {
-        const [jsHandle] = message.args();
-        const { description } = jsHandle && jsHandle._remoteObject || {};
-        logger.writeLog({text: description || message.text(), type: message.type().substr(0, 3).toUpperCase()});
+        let msgs = message.args()
+            .map(m => {
+                console.log(m._remoteObject)
+                if (m && m._remoteObject.preview && m._remoteObject.preview.subtype !== "error") {
+                    const obj = m._remoteObject.preview.properties.reduce((a, i) => (a[i.name] = i.value, a), {});
+                    return JSON.stringify(obj, null, 2);
+                }
+                if (m && m._remoteObject.description) {
+                    return m._remoteObject.description;
+                }
+                if (m && m._remoteObject.value) {
+                    return m._remoteObject.value;
+                }
+
+                return undefined;
+            });
+
+        logger.writeLog({ text: msgs.join(" "), type: message.type().substr(0, 3).toUpperCase() });
     },
     'response': response => {
         if (!(/;base64,/ig.test(response.url()))) {
-            logger.writeLog({text: `${response.status()} ${response.url()}`, type: "LOG"});
+            logger.writeLog({ text: `${response.status()} ${response.url()}`, type: "LOG" });
         }
     },
     'requestfailed': request => {
-        logger.writeLog({text: `${request.failure().errorText} ${request.url()}`, type: "ERROR"});
+        logger.writeLog({ text: `${request.failure().errorText} ${request.url()}`, type: "ERROR" });
     }
 }
 
@@ -30,7 +45,7 @@ const pageEvents = {
  * Initialize headless browser and new page
  */
 async function init() {
-    
+
     if (browser && page) {
         return;
     }
@@ -39,13 +54,14 @@ async function init() {
         throw new Error("No target browser found");
     }
 
-    logger.writeLog({text: "Launching Browser", type: "LOG"});
+    logger.writeLog({ text: "Launching Browser", type: "LOG" });
     browser = await puppeteer.launch({
         executablePath: _options.URL_BROWSER,
-        product: _options.BROWSER_NAME
-    });    
+        product: _options.BROWSER_NAME,
+        headless: true
+    });
 
-    logger.writeLog({text: "Starting Page", type: "LOG"});
+    logger.writeLog({ text: "Starting Page", type: "LOG" });
     page = await browser.newPage();
 
     for (let event in pageEvents) {
@@ -66,14 +82,14 @@ async function closeBrowser() {
     }
     _options = null;
 
-    if(page) {
+    if (page) {
         for (let event in pageEvents) {
             if (pageEvents.hasOwnProperty(event)) {
                 page.off(event, pageEvents[event]);
             }
         }
 
-        logger.writeLog({text: "Closing Browser", type: "LOG"});
+        logger.writeLog({ text: "Closing Browser", type: "LOG" });
         page = null;
     }
 
@@ -99,19 +115,19 @@ function processTemplate(data) {
             await init();
 
             let tempFile = await templateHelper.prepareTemplate(data);
-            let urlTemplate = `http://localhost${ (_options.PORT && ':' + _options.PORT) || ''}/${tempFile.fileName}.html`;
+            let urlTemplate = `http://localhost${(_options.PORT && ':' + _options.PORT) || ''}/${tempFile.fileName}.html`;
 
             if (tempFile.urlTemplate) {
                 urlTemplate = tempFile.urlTemplate || urlTemplate;
             }
 
-            logger.writeLog({text: `Loading ${urlTemplate}`, type: "LOG"});
+            logger.writeLog({ text: `Loading ${urlTemplate}`, type: "LOG" });
             await page.goto(urlTemplate, { waitUntil: 'networkidle0' });
 
             const _footerHTML = await __getFooterTemplateFromTemplate(page);
             const _headerHTML = await __getHeaderTemplateFromTemplate(page);
-            
-            logger.writeLog({text: `Creating PDF`, type: "LOG"});
+
+            logger.writeLog({ text: `Creating PDF`, type: "LOG" });
             const pdfOptions = {
                 path: `${_options.PDF_DIR}/${tempFile.fileName}.pdf`,
                 format: 'Letter',
@@ -128,16 +144,16 @@ function processTemplate(data) {
             };
             if (data.$extraParams && data.$extraParams.orientacion && data.$extraParams.orientacion === "horizontal") {
                 pdfOptions.landscape = true;
-                page.addStyleTag({'content': '@page { size: A4 landscape; }'});
+                page.addStyleTag({ 'content': '@page { size: A4 landscape; }' });
             }
 
             const pdfFileBuffer = await page.pdf(pdfOptions);
 
-            res({fileName: `${tempFile.fileName}.pdf`, buffer: pdfFileBuffer });
+            res({ fileName: `${tempFile.fileName}.pdf`, buffer: pdfFileBuffer });
             templateHelper.deleteFile(`${_options.FILE_DIR}/${tempFile.fileName}.html`);
-            
+
         } catch (err) {
-            logger.writeLog({text: err.stack, type: "ERROR"});
+            logger.writeLog({ text: err.stack, type: "ERROR" });
             rej(err.message);
         }
 
@@ -150,7 +166,7 @@ function processTemplate(data) {
  */
 async function __getFooterTemplateFromTemplate(page) {
     try {
-        return await page.$eval("#page-footer", ele=> {
+        return await page.$eval("#page-footer", ele => {
             const t = {
                 marginBottom: ele.dataset.marginBottom || _options.printingMarginBottom,
                 footerTemplate: ele.outerHTML
@@ -161,14 +177,16 @@ async function __getFooterTemplateFromTemplate(page) {
             return t;
         });
     } catch (error) {
-        logger.writeLog({text: error.message + ". No footer template found", type: "WARN"});
+        logger.writeLog({ text: error.message + ". No footer template found", type: "WARN" });
     }
 
-    return ({ footerTemplate: `<div style="margin: 0 13mm;display: flex; align-items: center; width:100%;justify-content: flex-end;">
+    return ({
+        footerTemplate: `<div style="margin: 0 13mm;display: flex; align-items: center; width:100%;justify-content: flex-end;">
     <p style="font-size: 8px;text-align: right; align-self: flex-end;">
         [<span class="pageNumber"></span>/<span class="totalPages"></span>]
     </p>
-</div>`, marginBottom: _options.printingMarginBottom });
+</div>`, marginBottom: _options.printingMarginBottom
+    });
 }
 
 /**
@@ -177,7 +195,7 @@ async function __getFooterTemplateFromTemplate(page) {
  */
 async function __getHeaderTemplateFromTemplate(page) {
     try {
-        return await page.$eval("#page-header", ele=> {
+        return await page.$eval("#page-header", ele => {
             const t = {
                 marginTop: ele.dataset.marginTop || _options.printingMarginTop,
                 headerTemplate: ele.outerHTML
@@ -187,15 +205,15 @@ async function __getHeaderTemplateFromTemplate(page) {
 
             return t;
         });
-        
+
     } catch (error) {
-        logger.writeLog({text: error.message + ". No header template found", type: "WARN"});
+        logger.writeLog({ text: error.message + ". No header template found", type: "WARN" });
     }
 
     return ({ headerTemplate: `<span></span>`, marginTop: _options.printingMarginTop });
 }
 
-module.exports.initialize = function(options) {
+module.exports.initialize = function (options) {
     const {
         BROWSER_NAME = "chrome",
         URL_BROWSER,
@@ -206,7 +224,8 @@ module.exports.initialize = function(options) {
         printingMarginBottom = "18mm",
         printingMarginLeft = "18mm",
         printingMarginRight = "18mm",
-        TEMPLATE_DIR
+        TEMPLATE_DIR,
+        libs
     } = options;
 
     _options = {
@@ -219,7 +238,8 @@ module.exports.initialize = function(options) {
         printingMarginBottom,
         printingMarginLeft,
         printingMarginRight,
-        TEMPLATE_DIR
+        TEMPLATE_DIR,
+        libs
     };
 
     templateHelper = templateInitializer.initialize(_options);
