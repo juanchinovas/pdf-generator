@@ -14,7 +14,6 @@ const pageEvents = {
     'console': message => {
         let msgs = message.args()
             .map(m => {
-                console.log(m._remoteObject)
                 if (m && m._remoteObject.preview && m._remoteObject.preview.subtype !== "error") {
                     const obj = m._remoteObject.preview.properties.reduce((a, i) => (a[i.name] = i.value, a), {});
                     return JSON.stringify(obj, null, 2);
@@ -57,8 +56,7 @@ async function init() {
     logger.writeLog({ text: "Launching Browser", type: "LOG" });
     browser = await puppeteer.launch({
         executablePath: _options.URL_BROWSER,
-        product: _options.BROWSER_NAME,
-        headless: true
+        product: _options.BROWSER_NAME
     });
 
     logger.writeLog({ text: "Starting Page", type: "LOG" });
