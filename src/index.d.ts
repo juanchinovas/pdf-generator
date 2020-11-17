@@ -9,6 +9,10 @@ export interface Options {
     printingMarginLeft?: string | number;
     printingMarginRight?: string | number;
     BROWSER_NAME?: string;
+    /**
+     * Array list of javascript files to include in every templates.
+     */
+    libs: Array<string>;
 };
 interface ParamData {
     $templateName: string,

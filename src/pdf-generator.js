@@ -27,7 +27,6 @@ const pageEvents = {
 
                 return undefined;
             });
-
         logger.writeLog({ text: msgs.join(" "), type: message.type().substr(0, 3).toUpperCase() });
     },
     'response': response => {

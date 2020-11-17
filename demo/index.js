@@ -14,6 +14,8 @@ const options = ({
     TEMPLATE_DIR
 } = process.env);
 
+options.libs = ['mixin.js'];
+
 let pdfGenerator = pdfProcessor.pdfGenerator(options);
 const host = `http://localhost:${PORT}`;
 
