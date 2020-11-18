@@ -18,6 +18,9 @@ gulp.task("copy-files", shell.task(`cp ../README.md ../src/index.d.ts ../src/pac
 gulp.task("npm-install", shell.task(`cd ${destDir} && npm i --production`));
 gulp.task("npm-pack", shell.task(`cd ${destDir} && npm pack`));
 gulp.task("npm-publish", shell.task(`cd ${destDir} && npm publish`));
+// install plugin
+gulp.task("npm-un-plugin", shell.task(`cd ../demo && npm un html-pdf-generator`));
+gulp.task("npm-in-plugin", shell.task(`cd ../demo && npm i file:../compiled/npm`));
 
 gulp.task("compile", function () {
     return gulp.src(["../src/*.js", "!../src/node_modules/**"])
@@ -55,7 +58,7 @@ gulp.task('clean-scripts', function () {
     });
 });
 
-gulp.task('default', gulp.series('clean-dest', 'compile', 'copy-files', 'npm-install'));
+gulp.task('default', gulp.series('clean-dest', 'compile', 'copy-files', 'npm-install', 'npm-un-plugin', 'npm-in-plugin'));
 
 gulp.task('npm-pack', gulp.series('clean-dest', 'compile', 'copy-files', 'clean-scripts', 'bump-version', 'npm-pack'));
 

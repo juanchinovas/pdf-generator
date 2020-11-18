@@ -165,10 +165,11 @@ module.exports.initialize = function (options) {
         TEMPLATE_DIR: options.TEMPLATE_DIR,
         libs: (options.libs || [])
     };
-    if (_options.libs && Array.isArray(_options.libs) && _options.libs.filter(s => /vue(\.min\.?js)*/.test(s)).length === 0) {
+
+    if (_options.libs && Array.isArray(_options.libs) && _options.libs.filter(s => /vue(\.min\.+?js)*/.test(s)).length === 0) {
         _options.libs.unshift("https://cdn.jsdelivr.net/npm/vue");
     }
-
+    
     return {
         prepareTemplate: function (data) {
             return fileHelper

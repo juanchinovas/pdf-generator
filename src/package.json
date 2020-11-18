@@ -4,13 +4,13 @@
   "description": "NodeJs plugin to generate PDF from HTML template using Vuejs and puppeteer",
   "main": "index.js",
   "scripts": {
-    "start": "cd ../demo/ && npm start",
-    "build2npm": "npm test && cd ../compiled/ && npm i --production && npm run run-gulp",
+    "start": "cd ../demo/ && npm i && npm start",
+    "build2npm": "cd ../compiled/ && npm i --production && npm run run-gulp",
     "config": "npm run build2npm && npm run start",
-    "pack": "cd ../compiled/ && npm i --production && npm run run-pack",
-    "publish": "cd ../compiled/ && npm i --production && npm run run-publish",
+    "pack": "npm test && cd ../compiled/ && npm i --production && npm run run-pack",
+    "publish": "npm run pack && cd ../compiled/ && npm run run-publish",
     "test": "mocha test --exit",
-    "config-dev": "npm i && cd ../compiled/ && npm i &&  npm run run-gulp && cd ../demo && npm i && npm start"
+    "config-dev": "npm i && npm run build2npm"
   },
   "keywords": [
     "pdf",

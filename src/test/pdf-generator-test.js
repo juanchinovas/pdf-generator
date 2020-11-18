@@ -1,6 +1,8 @@
 const expect = require("chai").expect;
 const pdfGen = require("../pdf-generator");
 
+const URL_BROWSER = "/opt/google/chrome/google-chrome"; // : '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+
 describe("Testing pdf generator file", () => {
 
     it("should fail when #initialize() with no data", () => {
@@ -32,7 +34,7 @@ describe("Testing pdf generator file", () => {
     });
     it("should fail when #processTemplate(...) with empty object", (done) => {
         const init = pdfGen.initialize({
-            URL_BROWSER: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // depend of the OS
+            URL_BROWSER, // depend of the OS
             FILE_DIR: '../demo/temp',
             TEMPLATE_DIR:'../demo/templates',
             PDF_DIR: '../demo/temp/pdfs'
@@ -42,7 +44,7 @@ describe("Testing pdf generator file", () => {
             done("failed");
         })
         .catch( err => {
-            expect(err).to.be.a('string').that.to.be.equal("No templateName provided");
+            expect(err).to.be.a('string').that.to.be.equal("No $templateName provided");
             done();
         })
         .finally(() => {
@@ -51,7 +53,7 @@ describe("Testing pdf generator file", () => {
     });
     it("should fail when #processTemplate(...) with not existing template", (done) => {
         const init = pdfGen.initialize({
-            URL_BROWSER: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // depend of the OS
+            URL_BROWSER, // depend of the OS
             FILE_DIR: '../demo/temp',
             TEMPLATE_DIR:'../demo/templates',
             PDF_DIR: '../demo/temp/pdfs'
@@ -68,54 +70,32 @@ describe("Testing pdf generator file", () => {
             init.dispose().then(() => {});
         });
     });
-    it("should fail #processTemplate(...) when server is not running", (done) => {
+    it("should fail #processTemplate(...) wrong port number", (done) => {
         const init = pdfGen.initialize({
-            URL_BROWSER: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // depend of the OS
+            URL_BROWSER, // depend of the OS
             FILE_DIR: '../demo/temp',
             TEMPLATE_DIR:'../demo/templates',
-            PDF_DIR: '../demo/temp/pdfs'
+            PDF_DIR: '../demo/temp/pdfs',
+            PORT: 13000
         });
         init.processTemplate({$templateName: "Template1"})
         .then(() => {
             done("failed");
         })
         .catch( err => {
-            expect(err).to.be.a('string').that.match(/net::ERR_CONNECTION_REFUSED at http:\/\/localhost/ig);
+            expect(err).to.be.a('string').that.match(/net::ERR_CONNECTION_REFUSED at/ig);
             done();
         })
         .finally(() => {
             init.dispose().then(() => {});
         });
     });
-    it("should fail #processTemplate(...) when not specify port number", (done) => {
-        
+    it("should #processTemplate() returns an object", (done) => {
         // require demo server
         require("../../demo/index");
 
         const init = pdfGen.initialize({
-            URL_BROWSER: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // depend of the OS
-            FILE_DIR: '../demo/temp',
-            TEMPLATE_DIR:'../demo/templates',
-            PDF_DIR: '../demo/temp/pdfs'
-        });
-
-        init.processTemplate({$templateName: "Template1"})
-        .then(() => {
-            done("failed");
-        })
-        .catch( err => {
-            expect(err).to.be.a('string').that.match(/net::ERR_CONNECTION_REFUSED at http:\/\/localhost/ig);
-            done();
-        })
-        .finally(() => {
-            init.dispose().then(() => {});
-        });
-
-    });
-    it("should #processTemplate() returns an object", (done) => {
-        
-        const init = pdfGen.initialize({
-            URL_BROWSER: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // depend of the OS
+            URL_BROWSER, // depend of the OS
             FILE_DIR: '../demo/temp',
             TEMPLATE_DIR:'../demo/templates',
             PDF_DIR: '../demo/temp/pdfs',

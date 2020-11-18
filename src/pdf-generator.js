@@ -139,7 +139,7 @@ function processTemplate(data) {
                     right: _options.printingMarginRight
                 }
             };
-            if (data.$extraParams && data.$extraParams.orientacion && data.$extraParams.orientacion === "horizontal") {
+            if (data.$extraParams && data.$extraParams.orientation && data.$extraParams.orientation === "horizontal") {
                 pdfOptions.landscape = true;
                 page.addStyleTag({ 'content': '@page { size: A4 landscape; }' });
             }

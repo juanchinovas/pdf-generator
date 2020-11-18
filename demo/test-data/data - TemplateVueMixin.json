@@ -1,5 +1,6 @@
 {
     "templateName": "TemplateVueMixin",
+    "orientation": "horizontal",
     "parameters": {
         "param1": "param1 value",
         "param2": 1000.23,

@@ -11,7 +11,7 @@ A [NodeJs](https://nodejs.org) plugin to generate PDF from HTML template using [
 
 See postman [collection](../demo/pdf-generator-test.postman_collection.json) for mare example,
 
-> If you need more functionality in your HTML tamplate you can add the &nbsp;&nbsp; `mixins: Array`&nbsp;&nbsp; properties to the window object to extend Vue.js default functionality.
+> If you need more functionality in your HTML template you can add the &nbsp;&nbsp; `mixins: Array`&nbsp;&nbsp; properties to the window object to extend Vue.js default functionality.
 
 ## API
 
@@ -30,6 +30,7 @@ The `options` param is an object with the properties to config puppeteer and set
         printingMarginLeft?: string | number; // default 18mm
         printingMarginRight?: string | number; // default 18mm
         BROWSER_NAME?: string; // chrome|firefox - default chrome
+        libs: Array<string> // List of js files used on the templates
     }
 }
 ```

@@ -5,18 +5,25 @@ const pdfProcessor = require("html-pdf-generator");
 const fs = require("fs");
 
 const app = express();
-const options = ({
+const {
     BROWSER_NAME,
     URL_BROWSER,
     FILE_DIR,
     PDF_DIR,
     PORT = 3000,
-    TEMPLATE_DIR
-} = process.env);
+    TEMPLATE_DIR,
+    libs = ['misc/mixin.js']  
+} = process.env;
 
-options.libs = ['mixin.js'];
-
-let pdfGenerator = pdfProcessor.pdfGenerator(options);
+let pdfGenerator = pdfProcessor.pdfGenerator({
+    BROWSER_NAME,
+    URL_BROWSER,
+    FILE_DIR,
+    PDF_DIR,
+    PORT,
+    TEMPLATE_DIR,
+    libs 
+});
 const host = `http://localhost:${PORT}`;
 
 // compress all responses
