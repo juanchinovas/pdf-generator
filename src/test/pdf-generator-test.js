@@ -1,7 +1,9 @@
 const expect = require("chai").expect;
 const pdfGen = require("../pdf-generator");
 
-const URL_BROWSER = "/opt/google/chrome/google-chrome"; // : '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+const URL_BROWSER = /*"/opt/google/chrome/google-chrome";*/
+                    /*'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'*/
+                    `C:\\Users\\jnovas\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe`;
 
 describe("Testing pdf generator file", () => {
 
@@ -42,6 +44,7 @@ describe("Testing pdf generator file", () => {
         init.processTemplate({})
         .then(() => {
             done("failed");
+            console.log("juahaha");
         })
         .catch( err => {
             expect(err).to.be.a('string').that.to.be.equal("No $templateName provided");
@@ -63,6 +66,8 @@ describe("Testing pdf generator file", () => {
             done("failed");
         })
         .catch( err => {
+            
+            console.log(err);
             expect(err).to.be.a('string').that.to.be.equal("ENOENT: no such file or directory, open \'../demo/templates/No_found.html\'");
             done();
         })
@@ -83,6 +88,8 @@ describe("Testing pdf generator file", () => {
             done("failed");
         })
         .catch( err => {
+            
+            console.log(err);
             expect(err).to.be.a('string').that.match(/net::ERR_CONNECTION_REFUSED at/ig);
             done();
         })
@@ -111,6 +118,8 @@ describe("Testing pdf generator file", () => {
             done();
         })
         .catch( err => {
+            
+            console.log(err);
             done(err);
         })
         .finally(() => {

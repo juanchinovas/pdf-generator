@@ -17,11 +17,19 @@ export interface Options {
 interface ParamData {
     $templateName: string,
     $parameters: any,
-    $extraParams?: any
+    $extraParams?: ExtraParamData
+}
+
+interface ExtraParamData {
+    [key: string]: any;
+    orientation?: string;
+    preview?: boolean;
+    previewHTML?: boolean;
 }
 interface PDFGeneratorResult {
     fileName: string;
     buffer: Buffer;
+    templateType: 'application/pdf' | 'text/html';
 }
 export interface PDFGenerator {
     processTemplate: (data: ParamData) => Promise<PDFGeneratorResult>;

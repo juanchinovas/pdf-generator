@@ -35,10 +35,18 @@ function readTemplateContent(data) {
             .readFile(`${_options.TEMPLATE_DIR}/${data.$templateName}.html`)
             .then(templateData => templateData.toString("utf8"))
             .then(template => {
+                let orientationPage, previewHTMLTemplate, previewPDF;
+
                 if (!("noData" in data)) {
                     var param = _getTemplateParameters(template);
-                    param.extraParams = data.$extraParams;
                     let templateParts = template.split(/<\/body>\n*(<\/html>)*/gm);
+                    
+                    const {orientation, previewHTML, preview, ...rest} = data.$extraParams || {};
+
+                    param.extraParams = rest;
+                    orientationPage = orientation;
+                    previewHTMLTemplate = previewHTML;
+                    previewPDF = preview;
 
                     templateParts.push(`
                             ${_options.libs.map(s => '<script src="' + s + '"></script>').join('\n')}
@@ -68,7 +76,10 @@ function readTemplateContent(data) {
 
                 res({
                     template,
-                    templateName: data.$templateName
+                    templateName: data.$templateName,
+                    orientation: orientationPage, 
+                    previewHTML: previewHTMLTemplate, 
+                    preview: previewPDF
                 });
             })
             .catch(rej);
@@ -179,7 +190,10 @@ module.exports.initialize = function (options) {
                         saveOnTemp(
                             processedData.templateName,
                             processedData.template
-                        )
+                        ).then((fileName) => ({
+                            ...fileName,
+                            ...processedData
+                        }))
                     )
                 );
         },

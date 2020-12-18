@@ -112,7 +112,9 @@ function processTemplate(data) {
             await init();
 
             let tempFile = await templateHelper.prepareTemplate(data);
+            
             let urlTemplate = `http://localhost${(_options.PORT && ':' + _options.PORT) || ''}/${tempFile.fileName}.html`;
+            let templateType = 'application/pdf';
 
             if (tempFile.urlTemplate) {
                 urlTemplate = tempFile.urlTemplate || urlTemplate;
@@ -123,30 +125,39 @@ function processTemplate(data) {
 
             const _footerHTML = await __getFooterTemplateFromTemplate(page);
             const _headerHTML = await __getHeaderTemplateFromTemplate(page);
+            let templateBuffer = null;
 
-            logger.writeLog({ text: `Creating PDF`, type: "LOG" });
-            const pdfOptions = {
-                path: `${_options.PDF_DIR}/${tempFile.fileName}.pdf`,
-                format: 'Letter',
-                printBackground: true,
-                displayHeaderFooter: true,
-                footerTemplate: _footerHTML.footerTemplate,
-                headerTemplate: _headerHTML.headerTemplate,
-                margin: {
-                    top: _headerHTML.marginTop,
-                    bottom: _footerHTML.marginBottom,
-                    left: _options.printingMarginLeft,
-                    right: _options.printingMarginRight
+            if (tempFile.previewHTML !== true) {
+                logger.writeLog({ text: `Creating PDF`, type: "LOG" });
+                const pdfOptions = {
+                    path: `${_options.PDF_DIR}/${tempFile.fileName}.pdf`,
+                    format: 'Letter',
+                    printBackground: true,
+                    displayHeaderFooter: true,
+                    footerTemplate: _footerHTML.footerTemplate,
+                    headerTemplate: _headerHTML.headerTemplate,
+                    margin: {
+                        top: _headerHTML.marginTop,
+                        bottom: _footerHTML.marginBottom,
+                        left: _options.printingMarginLeft,
+                        right: _options.printingMarginRight
+                    }
+                };
+                if (tempFile.orientation === "horizontal") {
+                    pdfOptions.landscape = true;
+                    page.addStyleTag({ 'content': '@page { size: A4 landscape; }' });
                 }
-            };
-            if (data.$extraParams && data.$extraParams.orientation && data.$extraParams.orientation === "horizontal") {
-                pdfOptions.landscape = true;
-                page.addStyleTag({ 'content': '@page { size: A4 landscape; }' });
+                // Don't save the pdf 
+                if (tempFile.preview === true) {
+                    delete pdfOptions.path;
+                }
+                templateBuffer = await page.pdf(pdfOptions);
+            } else {
+                templateType = 'text/html';
+                templateBuffer = Buffer.from(await page.content(), 'utf8');
             }
 
-            const pdfFileBuffer = await page.pdf(pdfOptions);
-
-            res({ fileName: `${tempFile.fileName}.pdf`, buffer: pdfFileBuffer });
+            res({ fileName: `${tempFile.fileName}.pdf`, buffer: templateBuffer, templateType });
             templateHelper.deleteFile(`${_options.FILE_DIR}/${tempFile.fileName}.html`);
 
         } catch (err) {

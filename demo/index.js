@@ -12,7 +12,7 @@ const {
     PDF_DIR,
     PORT = 3000,
     TEMPLATE_DIR,
-    libs = ['misc/mixin.js']  
+    libs = ['misc/mixin.js']
 } = process.env;
 
 let pdfGenerator = pdfProcessor.pdfGenerator({
@@ -22,7 +22,7 @@ let pdfGenerator = pdfProcessor.pdfGenerator({
     PDF_DIR,
     PORT,
     TEMPLATE_DIR,
-    libs 
+    libs
 });
 const host = `http://localhost:${PORT}`;
 
@@ -36,7 +36,7 @@ app.use(bodyParser.text({ type: ["text/html", "text/plain"] }));
 
 app.get("/test-pdf/:templateName", (req, res) => {
     try {
-        let data = {noData: true};
+        let data = { noData: true };
         const fileTemplate = `./test-data/data - ${req.params.templateName}.json`;
         if (fs.existsSync(fileTemplate)) {
             data = require(fileTemplate);
@@ -47,7 +47,7 @@ app.get("/test-pdf/:templateName", (req, res) => {
             $parameters: parameters,
             $extraParams: getExtraParams(data, ["parameters"])
         };
-        
+
         pdfGenerator
             .processTemplate(templateData)
             .then(processed => {
@@ -74,9 +74,9 @@ app.post("/documents", (req, res) => {
     }
     const data = req.body;
     let pdfGenPromise = null;
-    if (data.urlTemplate || typeof(data) === "string") {
+    if (data.urlTemplate || typeof (data) === "string") {
         pdfGenPromise = pdfGenerator
-        .processTemplate(data);
+            .processTemplate(data);
     } else {
         const parameters = parseDataFromArrayToObject(data.parameters);
         const templateData = {
@@ -85,15 +85,15 @@ app.post("/documents", (req, res) => {
             $extraParams: getExtraParams(data, ["parameters"])
         };
         pdfGenPromise = pdfGenerator
-        .processTemplate(templateData);
+            .processTemplate(templateData);
     }
 
     pdfGenPromise.then(processed => {
-            res.json({
-                fileName: processed.fileName,
-                url: `${host}/documents/${processed.fileName}`
-            });
-        })
+        res.json({
+            fileName: processed.fileName,
+            url: `${host}/documents/${processed.fileName}`
+        });
+    })
         .catch(err => {
             res.status(400).send({ message: err, code: -17 });
         });
@@ -102,6 +102,47 @@ app.post("/documents", (req, res) => {
 app.get("/documents/:fileName", (req, res) => {
     res.sendFile(`${__dirname}/${PDF_DIR}/${req.params.fileName}`);
 });
+
+app.get("/documents/:templateName/preview", (req, res) => {
+    const typePreview = req.query.type;
+
+    try {
+        let data = { noData: true };
+        const fileTemplate = `./test-data/data - ${req.params.templateName}.json`;
+        if (fs.existsSync(fileTemplate)) {
+            data = require(fileTemplate);
+        }
+        const parameters = parseDataFromArrayToObject(data.parameters);
+        const templateData = {
+            $templateName: req.params["templateName"],
+            $parameters: parameters,
+            $extraParams: {
+                ...getExtraParams(data, ["parameters"]),
+                preview: true,
+                previewHTML: typePreview === "html"
+            }
+        };
+
+        pdfGenerator
+            .processTemplate(templateData)
+            .then(processed => {
+                res.setHeader(
+                    "Content-Disposition",
+                    "inline; filename=" + processed.fileName
+                );
+                res.type(processed.templateType);
+
+                res.send(processed.buffer);
+            })
+            .catch(err => {
+                res.status(400).send({ message: err, code: -15 });
+            });
+    } catch (err) {
+        res.status(400).send({ message: err.message, code: -16 });
+    }
+
+});
+
 
 app.get("/templates/:templateName/parameters", (req, res) => {
     pdfProcessor
@@ -147,7 +188,7 @@ app.listen(PORT, () =>
     console.log(`Example app listening at ${host}`)
 );
 
-process.on("exit", function(code) {
+process.on("exit", function (code) {
     console.log(`About to exit with code: ${code}`);
     pdfGenerator && pdfGenerator.dispose();
     pdfGenerator = null;

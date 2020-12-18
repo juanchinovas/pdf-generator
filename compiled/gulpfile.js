@@ -4,8 +4,12 @@ const shell = require("gulp-shell");
 const clean = require("gulp-clean");
 const bump = require("gulp-bump");
 const fs = require("fs");
+const os = require('os');
 
 const destDir = "../compiled/npm";
+let copyCommand = os.platform() === "win32"? `for %i in ("..\\README.md" "..\\src\\index.d.ts" "..\\src\\package.json") do copy /Y %i "${destDir}"`: 
+                                            `cp ../README.md ../src/index.d.ts ../src/package.json ${destDir}`;
+
 
 gulp.task("clean-dest", function () {
     if (!fs.existsSync("./npm")) return Promise.resolve();
@@ -14,7 +18,7 @@ gulp.task("clean-dest", function () {
         .pipe(clean())
 });
 
-gulp.task("copy-files", shell.task(`cp ../README.md ../src/index.d.ts ../src/package.json ${destDir}`));
+gulp.task("copy-files", shell.task(copyCommand));
 gulp.task("npm-install", shell.task(`cd ${destDir} && npm i --production`));
 gulp.task("npm-pack", shell.task(`cd ${destDir} && npm pack`));
 gulp.task("npm-publish", shell.task(`cd ${destDir} && npm publish`));
