@@ -3,6 +3,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const pdfProcessor = require("html-pdf-generator");
 const fs = require("fs");
+const pdfLib = require('pdf-lib');
 
 const app = express();
 const {
@@ -17,7 +18,7 @@ const {
 
 let pdfGenerator = pdfProcessor.pdfGenerator({
     BROWSER_NAME,
-    URL_BROWSER,
+    URL_BROWSER: "C:\\Users\\jnovas\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe",
     FILE_DIR,
     PDF_DIR,
     PORT,
@@ -125,13 +126,52 @@ app.get("/documents/:templateName/preview", (req, res) => {
 
         pdfGenerator
             .processTemplate(templateData)
+            .then((processed) => {
+                if (processed.templateType === "array/pdf") {
+                    return pdfLib.PDFDocument.create()
+                    .then(async (mergedPdf) => {
+
+                        for (let document of processed.buffer) {
+                            document = await pdfLib.PDFDocument.load(document);
+
+                            const copiedPages = await mergedPdf.copyPages(document, document.getPageIndices());
+                            copiedPages.forEach((page) => mergedPdf.addPage(page));    
+                        }
+                        
+                        return { ...processed, buffer: Buffer.from(await mergedPdf.save()), templateType: 'application/pdf'};
+                    })
+                }
+
+                return processed;
+            })
             .then(processed => {
                 res.setHeader(
                     "Content-Disposition",
                     "inline; filename=" + processed.fileName
                 );
-                res.type(processed.templateType);
+                /*if (processed.templateType === "array/pdf") {
+                    const mergedPdf = await PDFDocument.create();
 
+                    const pdfA = await PDFDocument.load(fs.readFileSync('a.pdf'));
+                    const pdfB = await PDFDocument.load(fs.readFileSync('b.pdf'));
+
+                    const copiedPagesA = await mergedPdf.copyPages(pdfA, pdfA.getPageIndices());
+                    copiedPagesA.forEach((page) => mergedPdf.addPage(page));
+
+                    const copiedPagesB = await mergedPdf.copyPages(pdfB, pdfB.getPageIndices());
+                    copiedPagesB.forEach((page) => mergedPdf.addPage(page));
+
+                    const mergedPdfFile = await mergedPdf.save();
+
+                    res.type("application/pdf");
+                    res.send(processed.buffer[processed.buffer.length -1]);
+                    console.log("Array/pdf");
+                } else {
+                    res.type(processed.templateType);
+                    res.send(processed.buffer);
+                    console.log("One");
+                }*/
+                res.type(processed.templateType);
                 res.send(processed.buffer);
             })
             .catch(err => {

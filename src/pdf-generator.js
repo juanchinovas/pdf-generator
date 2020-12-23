@@ -123,8 +123,8 @@ function processTemplate(data) {
             logger.writeLog({ text: `Loading ${urlTemplate}`, type: "LOG" });
             await page.goto(urlTemplate, { waitUntil: 'networkidle0' });
 
-            const _footerHTML = await __getFooterTemplateFromTemplate(page);
-            const _headerHTML = await __getHeaderTemplateFromTemplate(page);
+            let _footerHTML = await __getFooterTemplateFromTemplate(page);
+            let _headerHTML = await __getHeaderTemplateFromTemplate(page);
             let templateBuffer = null;
 
             if (tempFile.previewHTML !== true) {
@@ -136,6 +136,7 @@ function processTemplate(data) {
                     displayHeaderFooter: true,
                     footerTemplate: _footerHTML.footerTemplate,
                     headerTemplate: _headerHTML.headerTemplate,
+                    preferCSSPageSize: tempFile.preferCssPage || false,
                     margin: {
                         top: _headerHTML.marginTop,
                         bottom: _footerHTML.marginBottom,
@@ -151,7 +152,28 @@ function processTemplate(data) {
                 if (tempFile.preview === true) {
                     delete pdfOptions.path;
                 }
-                templateBuffer = await page.pdf(pdfOptions);
+                // Generate pdf with custom header y footer 
+                if (tempFile.customPageHeaderFooterIds) {
+                    const pdfChunks = [];
+                    for (const pageIndex in tempFile.customPageHeaderFooterIds) {
+                        _headerHTML = await __getHeaderTemplateFromTemplate(page, `#page-header-${tempFile.customPageHeaderFooterIds[pageIndex]}`);
+                        _footerHTML = await __getFooterTemplateFromTemplate(page, `#page-footer-${tempFile.customPageHeaderFooterIds[pageIndex]}`);
+
+                        pdfOptions.footerTemplate = _footerHTML.footerTemplate;
+                        pdfOptions.headerTemplate = _headerHTML.headerTemplate;
+
+                        pdfOptions.margin.top = _headerHTML.marginTop;
+                        pdfOptions.margin.bottom = _footerHTML.marginBottom;
+
+                        pdfOptions.pageRanges  = tempFile.customPageHeaderFooterIds[pageIndex];
+
+                        pdfChunks.push(await page.pdf(pdfOptions));
+                    }
+                    templateBuffer = pdfChunks;
+                    templateType = "array/pdf";
+                } else {
+                    templateBuffer = await page.pdf(pdfOptions);
+                }
             } else {
                 templateType = 'text/html';
                 templateBuffer = Buffer.from(await page.content(), 'utf8');
@@ -172,18 +194,19 @@ function processTemplate(data) {
  * Read the template to footer from the HTML template
  * @param {*} page 
  */
-async function __getFooterTemplateFromTemplate(page) {
+async function __getFooterTemplateFromTemplate(page, pageFooterId = "#page-footer") {
     try {
-        return await page.$eval("#page-footer", ele => {
-            const t = {
-                marginBottom: ele.dataset.marginBottom || _options.printingMarginBottom,
-                footerTemplate: ele.outerHTML
-            };
-
+        return await page.$eval(pageFooterId, (ele, _options) => {
+            const outerHTML = ele.outerHTML;
             ele.style.display = "none";
 
-            return t;
-        });
+            return ({
+                footerTemplate: outerHTML,
+                marginBottom: ele.dataset.marginBottom || _options.printingMarginBottom
+            });
+
+        }, _options);
+
     } catch (error) {
         logger.writeLog({ text: error.message + ". No footer template found", type: "WARN" });
     }
@@ -193,7 +216,7 @@ async function __getFooterTemplateFromTemplate(page) {
     <p style="font-size: 8px;text-align: right; align-self: flex-end;">
         [<span class="pageNumber"></span>/<span class="totalPages"></span>]
     </p>
-</div>`, marginBottom: _options.printingMarginBottom
+</div>`, marginBottom:_options.printingMarginBottom
     });
 }
 
@@ -201,18 +224,19 @@ async function __getFooterTemplateFromTemplate(page) {
  * Read the template to header from the HTML template
  * @param {*} page 
  */
-async function __getHeaderTemplateFromTemplate(page) {
+async function __getHeaderTemplateFromTemplate(page, pageHeaderId = "#page-header") {
     try {
-        return await page.$eval("#page-header", ele => {
-            const t = {
-                marginTop: ele.dataset.marginTop || _options.printingMarginTop,
-                headerTemplate: ele.outerHTML
-            };
-
+        return await page.$eval(pageHeaderId, (ele, _options) => {
+            const outerHTML = ele.outerHTML;
+            console.log(outerHTML);
             ele.style.display = "none";
 
-            return t;
-        });
+            return ({
+                headerTemplate: outerHTML,
+                marginTop: ele.dataset.marginTop || _options.printingMarginTop
+            });
+
+        }, _options);
 
     } catch (error) {
         logger.writeLog({ text: error.message + ". No header template found", type: "WARN" });

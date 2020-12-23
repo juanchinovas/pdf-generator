@@ -28,8 +28,8 @@ interface ExtraParamData {
 }
 interface PDFGeneratorResult {
     fileName: string;
-    buffer: Buffer;
-    templateType: 'application/pdf' | 'text/html';
+    buffer: Buffer | Array<Buffer>;
+    templateType: 'application/pdf' | 'text/html' | 'array/pdf';
 }
 export interface PDFGenerator {
     processTemplate: (data: ParamData) => Promise<PDFGeneratorResult>;

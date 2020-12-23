@@ -35,18 +35,19 @@ function readTemplateContent(data) {
             .readFile(`${_options.TEMPLATE_DIR}/${data.$templateName}.html`)
             .then(templateData => templateData.toString("utf8"))
             .then(template => {
-                let orientationPage, previewHTMLTemplate, previewPDF;
+                let orientationPage, previewHTMLTemplate, previewPDF, pageHeaderFooterIds;
 
                 if (!("noData" in data)) {
                     var param = _getTemplateParameters(template);
                     let templateParts = template.split(/<\/body>\n*(<\/html>)*/gm);
                     
-                    const {orientation, previewHTML, preview, ...rest} = data.$extraParams || {};
+                    const {customPageHeaderFooterIds, orientation, previewHTML, preview, ...rest} = data.$extraParams || {};
 
                     param.extraParams = rest;
                     orientationPage = orientation;
                     previewHTMLTemplate = previewHTML;
                     previewPDF = preview;
+                    pageHeaderFooterIds = customPageHeaderFooterIds;
 
                     templateParts.push(`
                             ${_options.libs.map(s => '<script src="' + s + '"></script>').join('\n')}
@@ -61,6 +62,12 @@ function readTemplateContent(data) {
                                             )
                                         )}
                                     };
+                                    // Allow style inside Vue root
+                                    Vue.component('v-style', {
+                                        render: function (createElement) {
+                                            return createElement('style', this.$slots.default)
+                                        }
+                                    });
 
                                     if (Vue.createApp) { // Vue v3
                                         Vue.createApp(vueInit).mount('#app');
@@ -79,7 +86,8 @@ function readTemplateContent(data) {
                     templateName: data.$templateName,
                     orientation: orientationPage, 
                     previewHTML: previewHTMLTemplate, 
-                    preview: previewPDF
+                    preview: previewPDF,
+                    customPageHeaderFooterIds: pageHeaderFooterIds
                 });
             })
             .catch(rej);

@@ -10,7 +10,7 @@
     "pack": "npm test && cd ../compiled/ && npm i --production && npm run run-pack",
     "publish": "npm run pack && cd ../compiled/ && npm run run-publish",
     "test": "mocha test --exit",
-    "config-dev": "npm i && npm run build2npm"
+    "config-dev": "npm i && npm run config"
   },
   "keywords": [
     "pdf",
