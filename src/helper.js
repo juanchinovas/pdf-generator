@@ -41,43 +41,47 @@ function readTemplateContent(data) {
                     var param = _getTemplateParameters(template);
                     let templateParts = template.split(/<\/body>\n*(<\/html>)*/gm);
                     
-                    const {customPageHeaderFooterIds, orientation, previewHTML, preview, ...rest} = data.$extraParams || {};
+                    const {customPagesHeaderFooter, orientation, previewHTML, preview, ...rest} = data.$extraParams || {};
 
                     param.extraParams = rest;
+                    param.extraParams.totalPages = 0;
+                    delete param.totalPages;
+
                     orientationPage = orientation;
                     previewHTMLTemplate = previewHTML;
                     previewPDF = preview;
-                    pageHeaderFooterIds = customPageHeaderFooterIds;
+                    pageHeaderFooterIds = customPagesHeaderFooter;
+                    
+                    data.$parameters && (delete data.$parameters.totalPages);
 
                     templateParts.push(`
-                            ${_options.libs.map(s => '<script src="' + s + '"></script>').join('\n')}
-                            <script>
-                                window.onload = function () {
-                                    var vueInit = {
-                                        mixins: window.mixins,
-                                        data: ${JSON.stringify(
-                                            Object.assign(
-                                                param,
-                                                data.$parameters
-                                            )
-                                        )}
-                                    };
-                                    // Allow style inside Vue root
-                                    Vue.component('v-style', {
-                                        render: function (createElement) {
-                                            return createElement('style', this.$slots.default)
-                                        }
-                                    });
-
-                                    if (Vue.createApp) { // Vue v3
-                                        Vue.createApp(vueInit).mount('#app');
-                                    } else {
-                                        vueInit.el = '#app';
-                                        new Vue(vueInit);
+                        ${_options.libs.map(s => '<script src="' + s + '"></script>').join('\n')}
+                        <script>
+                            var reactives = {
+                                'totalPages': []
+                            };
+                            window.onload = function () {
+                                var vueInit = {
+                                    mixins: window.mixins,
+                                    data: ${JSON.stringify( Object.assign(param, data.$parameters) )}
+                                };
+                                // Allow style inside Vue root
+                                Vue.component('v-style', {
+                                    render: function (createElement) {
+                                        return createElement('style', this.$slots.default);
                                     }
-                                    
+                                });
+                                let app = null;
+                                if (Vue.createApp) { // Vue v3
+                                    app = Vue.createApp(vueInit).mount('#app');
+                                } else {
+                                    vueInit.el = '#app';
+                                    app = new Vue(vueInit);
                                 }
-                            </script></body></html>`);
+                                reactives.totalPages.push(app);
+                            }
+                        </script></body></html>
+                    `);
                     template = templateParts.join('');
                 }
 
@@ -87,7 +91,7 @@ function readTemplateContent(data) {
                     orientation: orientationPage, 
                     previewHTML: previewHTMLTemplate, 
                     preview: previewPDF,
-                    customPageHeaderFooterIds: pageHeaderFooterIds
+                    customPagesHeaderFooter: pageHeaderFooterIds
                 });
             })
             .catch(rej);
@@ -206,6 +210,7 @@ module.exports.initialize = function (options) {
                 );
         },
         deleteFile: fileHelper.deleteFile,
+        saveFile: fileHelper.saveFile,
         dispose: () => {
             _options = null;
         }

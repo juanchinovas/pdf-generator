@@ -20,6 +20,11 @@ interface ParamData {
     $extraParams?: ExtraParamData
 }
 
+interface PdfMergerDelegator {
+    getPdfTotalPages: (pdfBuffer: Buffer) => Promise<number>;
+    merge: (pdflist: Array<Buffer>) => Promise<Buffer>;
+}
+
 interface ExtraParamData {
     [key: string]: any;
     orientation?: string;
@@ -32,7 +37,7 @@ interface PDFGeneratorResult {
     templateType: 'application/pdf' | 'text/html' | 'array/pdf';
 }
 export interface PDFGenerator {
-    processTemplate: (data: ParamData) => Promise<PDFGeneratorResult>;
+    processTemplate: (data: ParamData, pdfMergerDelegator?: PdfMergerDelegator) => Promise<PDFGeneratorResult>;
     dispose: () => Promise<void>;
 };
 /**

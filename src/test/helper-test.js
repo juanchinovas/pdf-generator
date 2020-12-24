@@ -41,9 +41,10 @@ describe("Testing helper file functionality", () => {
 
     it("Initializer return", () => {
         expect(helperIni).to.be.an('object').that.is.not.empty;
-        expect(helperIni).to.have.all.keys('prepareTemplate', 'deleteFile', 'dispose');
+        expect(helperIni).to.have.all.keys('prepareTemplate', 'deleteFile', 'saveFile', 'dispose');
         expect(helperIni).to.have.property('prepareTemplate').that.is.a('function');
         expect(helperIni).to.have.property('deleteFile').that.is.a('function');
+        expect(helperIni).to.have.property('saveFile').that.is.a('function');
         expect(helperIni).to.have.property('dispose').that.is.a('function');
     });
 

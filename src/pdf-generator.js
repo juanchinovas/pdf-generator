@@ -101,10 +101,11 @@ async function closeBrowser() {
  * Load the HTML template file
  * 
  * @param data - {$templateName: string, $parameters: any, $extraParams: any}
+ * @param pdfMergerDelegator - 
  * 
  * @returns Promise<{fileName:string, buffer: Buffer}>
  */
-function processTemplate(data) {
+function processTemplate(data, pdfMergerDelegator) {
 
     return new Promise(async (res, rej) => {
 
@@ -115,6 +116,7 @@ function processTemplate(data) {
             
             let urlTemplate = `http://localhost${(_options.PORT && ':' + _options.PORT) || ''}/${tempFile.fileName}.html`;
             let templateType = 'application/pdf';
+            let templateBuffer = null;
 
             if (tempFile.urlTemplate) {
                 urlTemplate = tempFile.urlTemplate || urlTemplate;
@@ -123,12 +125,11 @@ function processTemplate(data) {
             logger.writeLog({ text: `Loading ${urlTemplate}`, type: "LOG" });
             await page.goto(urlTemplate, { waitUntil: 'networkidle0' });
 
-            let _footerHTML = await __getFooterTemplateFromTemplate(page);
-            let _headerHTML = await __getHeaderTemplateFromTemplate(page);
-            let templateBuffer = null;
-
             if (tempFile.previewHTML !== true) {
                 logger.writeLog({ text: `Creating PDF`, type: "LOG" });
+                
+                let _footerHTML = await __getFooterTemplateFromTemplate(page.$eval.bind(page));
+                let _headerHTML = await __getHeaderTemplateFromTemplate(page.$eval.bind(page));
                 const pdfOptions = {
                     path: `${_options.PDF_DIR}/${tempFile.fileName}.pdf`,
                     format: 'Letter',
@@ -152,12 +153,22 @@ function processTemplate(data) {
                 if (tempFile.preview === true) {
                     delete pdfOptions.path;
                 }
+                
+                templateBuffer = await resolvePdfTotalPage({ 
+                    pagePdfGenFn: page.pdf.bind(page), 
+                    pdfOptions, 
+                    pdfMergerDelegator, 
+                    pageEvalFn: page.$eval.bind(page)
+                });
+
                 // Generate pdf with custom header y footer 
-                if (tempFile.customPageHeaderFooterIds) {
+                if (tempFile.customPagesHeaderFooter) {
                     const pdfChunks = [];
-                    for (const pageIndex in tempFile.customPageHeaderFooterIds) {
-                        _headerHTML = await __getHeaderTemplateFromTemplate(page, `#page-header-${tempFile.customPageHeaderFooterIds[pageIndex]}`);
-                        _footerHTML = await __getFooterTemplateFromTemplate(page, `#page-footer-${tempFile.customPageHeaderFooterIds[pageIndex]}`);
+                    for (const pageIndex in tempFile.customPagesHeaderFooter) {
+                        let printPage = tempFile.customPagesHeaderFooter[pageIndex];
+
+                        _headerHTML = await __getHeaderTemplateFromTemplate(page.$eval.bind(page), `#page-header-${printPage}`);
+                        _footerHTML = await __getFooterTemplateFromTemplate(page.$eval.bind(page), `#page-footer-${printPage}`);
 
                         pdfOptions.footerTemplate = _footerHTML.footerTemplate;
                         pdfOptions.headerTemplate = _headerHTML.headerTemplate;
@@ -165,14 +176,20 @@ function processTemplate(data) {
                         pdfOptions.margin.top = _headerHTML.marginTop;
                         pdfOptions.margin.bottom = _footerHTML.marginBottom;
 
-                        pdfOptions.pageRanges  = tempFile.customPageHeaderFooterIds[pageIndex];
-
+                        pdfOptions.pageRanges  = printPage;
+                        
                         pdfChunks.push(await page.pdf(pdfOptions));
                     }
-                    templateBuffer = pdfChunks;
-                    templateType = "array/pdf";
-                } else {
-                    templateBuffer = await page.pdf(pdfOptions);
+                    pdfOptions.path && templateHelper.deleteFile(pdfOptions.path);
+                    if (pdfMergerDelegator) {
+                        templateBuffer = await pdfMergerDelegator.merge(pdfChunks);
+                        pdfOptions.path && await templateHelper.saveFile(pdfOptions.path, templateBuffer).catch(err => {
+                            logger.writeLog({ text: err, type: "ERROR" });
+                        });
+                    } else {
+                        templateBuffer = pdfChunks;
+                        templateType = "array/pdf";
+                    }
                 }
             } else {
                 templateType = 'text/html';
@@ -190,13 +207,50 @@ function processTemplate(data) {
     });
 }
 
+
+/**
+ * Generate the PDF to resolve the total pages of it.
+ * 
+ * @param Function pagePdfGenFn
+ * @param {*} pdfOptions
+ * @param {*} pdfMergerDelegator
+ * 
+ * @returns Promise<Buffer>
+ */
+function resolvePdfTotalPage({pagePdfGenFn, pdfOptions, pdfMergerDelegator, pageEvalFn}) {
+    return pagePdfGenFn/*page.pdf*/(pdfOptions)
+    .then(async (buffer) => {
+        if (pdfMergerDelegator) {
+            pdfOptions.path && templateHelper.deleteFile(pdfOptions.path); // Delete the previous pdf
+            const totalPages = await pdfMergerDelegator.getPdfTotalPages(buffer);
+            
+            return await pageEvalFn("body", (body, totalPages) => {
+                const script = document.createElement("script");
+                const text = document.createTextNode(`
+                    const key = 'totalPages';
+                    reactives[key].forEach((dep) => {
+                        if (dep.hasOwnProperty('extraParams') && dep.extraParams.hasOwnProperty(key)) dep.extraParams.totalPages = ${totalPages};
+                    });
+                `);
+                script.appendChild(text);
+                body.appendChild(script);
+            }, totalPages)
+            .then(() => {
+                return pagePdfGenFn/*page.pdf*/(pdfOptions);
+            });
+        }
+
+        return buffer;
+    });
+}
+
 /**
  * Read the template to footer from the HTML template
  * @param {*} page 
  */
-async function __getFooterTemplateFromTemplate(page, pageFooterId = "#page-footer") {
+async function __getFooterTemplateFromTemplate(pageEvalFn, pageFooterId = "#page-footer") {
     try {
-        return await page.$eval(pageFooterId, (ele, _options) => {
+        return await pageEvalFn/*page.$eval*/(pageFooterId, (ele, _options) => {
             const outerHTML = ele.outerHTML;
             ele.style.display = "none";
 
@@ -224,11 +278,10 @@ async function __getFooterTemplateFromTemplate(page, pageFooterId = "#page-foote
  * Read the template to header from the HTML template
  * @param {*} page 
  */
-async function __getHeaderTemplateFromTemplate(page, pageHeaderId = "#page-header") {
+async function __getHeaderTemplateFromTemplate(pageEvalFn, pageHeaderId = "#page-header") {
     try {
-        return await page.$eval(pageHeaderId, (ele, _options) => {
+        return await pageEvalFn/*page.$eval*/(pageHeaderId, (ele, _options) => {
             const outerHTML = ele.outerHTML;
-            console.log(outerHTML);
             ele.style.display = "none";
 
             return ({

@@ -66,9 +66,7 @@ describe("Testing pdf generator file", () => {
             done("failed");
         })
         .catch( err => {
-            
-            console.log(err);
-            expect(err).to.be.a('string').that.to.be.equal("ENOENT: no such file or directory, open \'../demo/templates/No_found.html\'");
+            expect(err).to.be.a('string').that.to.be.equal(`ENOENT: no such file or directory, open \'/demo/templates/No_found.html\'`);
             done();
         })
         .finally(() => {
