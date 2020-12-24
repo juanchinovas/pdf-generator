@@ -154,31 +154,35 @@ function processTemplate(data, pdfMergerDelegator) {
                     delete pdfOptions.path;
                 }
                 
-                templateBuffer = await resolvePdfTotalPage({ 
+                const {buffer, totalPages} = await resolvePdfTotalPage({ 
                     pagePdfGenFn: page.pdf.bind(page), 
                     pdfOptions, 
                     pdfMergerDelegator, 
                     pageEvalFn: page.$eval.bind(page)
                 });
-
+                templateBuffer = buffer;
                 // Generate pdf with custom header y footer 
                 if (tempFile.customPagesHeaderFooter) {
                     const pdfChunks = [];
                     for (const pageIndex in tempFile.customPagesHeaderFooter) {
                         let printPage = tempFile.customPagesHeaderFooter[pageIndex];
 
-                        _headerHTML = await __getHeaderTemplateFromTemplate(page.$eval.bind(page), `#page-header-${printPage}`);
-                        _footerHTML = await __getFooterTemplateFromTemplate(page.$eval.bind(page), `#page-footer-${printPage}`);
+                        _headerHTML = await __getHeaderTemplateFromTemplate(page.$eval.bind(page), `#header-page-${printPage}`);
+                        _footerHTML = await __getFooterTemplateFromTemplate(page.$eval.bind(page), `#footer-page-${printPage}`);
 
                         pdfOptions.footerTemplate = _footerHTML.footerTemplate;
                         pdfOptions.headerTemplate = _headerHTML.headerTemplate;
 
                         pdfOptions.margin.top = _headerHTML.marginTop;
                         pdfOptions.margin.bottom = _footerHTML.marginBottom;
-
-                        pdfOptions.pageRanges  = printPage;
                         
-                        pdfChunks.push(await page.pdf(pdfOptions));
+                        pdfOptions.pageRanges  = printPage.replace(/last|penult/g, (x) => x === 'penult'? totalPages - 1: x === 'last'? totalPages: x);
+                        
+                        try {
+                            pdfChunks.push(await page.pdf(pdfOptions));
+                        } catch (error) {
+                            logger.writeLog({ text: error.stack, type: "ERROR" });
+                        }
                     }
                     pdfOptions.path && templateHelper.deleteFile(pdfOptions.path);
                     if (pdfMergerDelegator) {
@@ -228,19 +232,17 @@ function resolvePdfTotalPage({pagePdfGenFn, pdfOptions, pdfMergerDelegator, page
                 const script = document.createElement("script");
                 const text = document.createTextNode(`
                     const key = 'totalPages';
-                    reactives[key].forEach((dep) => {
-                        if (dep.hasOwnProperty('extraParams') && dep.extraParams.hasOwnProperty(key)) dep.extraParams.totalPages = ${totalPages};
-                    });
+                    reactivesInstance.extraParams[key] = ${totalPages};
                 `);
                 script.appendChild(text);
                 body.appendChild(script);
             }, totalPages)
             .then(() => {
-                return pagePdfGenFn/*page.pdf*/(pdfOptions);
+                return { buffer: pagePdfGenFn/*page.pdf*/(pdfOptions), totalPages };
             });
         }
 
-        return buffer;
+        return { buffer, totalPages: 0 };
     });
 }
 
@@ -305,10 +307,10 @@ module.exports.initialize = function (options) {
         FILE_DIR,
         PDF_DIR,
         PORT,
-        printingMarginTop = "18mm",
-        printingMarginBottom = "18mm",
-        printingMarginLeft = "18mm",
-        printingMarginRight = "18mm",
+        printingMarginTop       = "2.54cm",
+        printingMarginBottom    = "2.54cm",
+        printingMarginLeft      = "2.54cm",
+        printingMarginRight     = "2.54cm",
         TEMPLATE_DIR,
         libs
     } = options;

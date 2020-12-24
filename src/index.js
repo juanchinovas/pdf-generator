@@ -7,7 +7,7 @@ const helper = require("./helper");
  * @param {*} options
  * @returns {*} pdfGenerator
  */
-exports.pdfGenerator = pdfGenerator.initialize;
+exports.pdfGeneratorInstance = pdfGenerator.initialize;
 
 /**
  * Read all parameters from a template

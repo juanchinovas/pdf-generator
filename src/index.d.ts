@@ -14,38 +14,50 @@ export interface Options {
      */
     libs: Array<string>;
 };
-interface ParamData {
+export interface ParamData {
     $templateName: string,
     $parameters: any,
     $extraParams?: ExtraParamData
-}
+};
 
-interface PdfMergerDelegator {
+export interface PdfMergerDelegator {
     getPdfTotalPages: (pdfBuffer: Buffer) => Promise<number>;
-    merge: (pdflist: Array<Buffer>) => Promise<Buffer>;
-}
+    merge: (pdfList: Array<Buffer>) => Promise<Buffer>;
+};
 
-interface ExtraParamData {
+export interface ExtraParamData {
     [key: string]: any;
     orientation?: string;
     preview?: boolean;
     previewHTML?: boolean;
-}
-interface PDFGeneratorResult {
+};
+export interface PDFGeneratorResult {
     fileName: string;
     buffer: Buffer | Array<Buffer>;
     templateType: 'application/pdf' | 'text/html' | 'array/pdf';
-}
+};
 export interface PDFGenerator {
+    /**
+     * Process the VueJs template to generate PDF
+     * @param ParamData
+     * @param PdfMergerDelegator optional
+     * 
+     * @returns Promise<PDFGeneratorResult>
+     */
     processTemplate: (data: ParamData, pdfMergerDelegator?: PdfMergerDelegator) => Promise<PDFGeneratorResult>;
+    /**
+     * Dispose the puppeteer instance
+     */
     dispose: () => Promise<void>;
 };
+
 /**
  * Create a PDF Generator instance
- * @param options Options
+ * @param Options
  * @returns PDFGenerator
  */
-export function pdfGenerator(options: Options): PDFGenerator;
+export function pdfGeneratorInstance(options: Options): PDFGenerator;
+
 /**
  * Real all the params found in a HTML template with the Vue.js template syntax.
  * @param templateName string

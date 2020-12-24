@@ -35,31 +35,26 @@ function readTemplateContent(data) {
             .readFile(`${_options.TEMPLATE_DIR}/${data.$templateName}.html`)
             .then(templateData => templateData.toString("utf8"))
             .then(template => {
-                let orientationPage, previewHTMLTemplate, previewPDF, pageHeaderFooterIds;
+                let orientation, previewHTML, preview, customPagesHeaderFooter;
 
                 if (!("noData" in data)) {
                     var param = _getTemplateParameters(template);
                     let templateParts = template.split(/<\/body>\n*(<\/html>)*/gm);
-                    
-                    const {customPagesHeaderFooter, orientation, previewHTML, preview, ...rest} = data.$extraParams || {};
+                    const extraParams = data.$extraParams || {};
 
-                    param.extraParams = rest;
+                    param.extraParams = extraParams;
                     param.extraParams.totalPages = 0;
                     delete param.totalPages;
 
-                    orientationPage = orientation;
-                    previewHTMLTemplate = previewHTML;
-                    previewPDF = preview;
-                    pageHeaderFooterIds = customPagesHeaderFooter;
-                    
-                    data.$parameters && (delete data.$parameters.totalPages);
+                    orientation = extraParams.orientation;
+                    previewHTML = extraParams.previewHTML;
+                    preview = extraParams.preview;
+                    customPagesHeaderFooter = extraParams.customPagesHeaderFooter;
 
                     templateParts.push(`
                         ${_options.libs.map(s => '<script src="' + s + '"></script>').join('\n')}
                         <script>
-                            var reactives = {
-                                'totalPages': []
-                            };
+                            var reactivesInstance = null;
                             window.onload = function () {
                                 var vueInit = {
                                     mixins: window.mixins,
@@ -68,17 +63,17 @@ function readTemplateContent(data) {
                                 // Allow style inside Vue root
                                 Vue.component('v-style', {
                                     render: function (createElement) {
+                                        this.$slots.default.push({text:'* {\\n-webkit-print-color-adjust: exact;\\ncolor-adjust: exact;}'});
                                         return createElement('style', this.$slots.default);
                                     }
                                 });
-                                let app = null;
+                                
                                 if (Vue.createApp) { // Vue v3
-                                    app = Vue.createApp(vueInit).mount('#app');
+                                    reactivesInstance = Vue.createApp(vueInit).mount('#app');
                                 } else {
                                     vueInit.el = '#app';
-                                    app = new Vue(vueInit);
+                                    reactivesInstance = new Vue(vueInit);
                                 }
-                                reactives.totalPages.push(app);
                             }
                         </script></body></html>
                     `);
@@ -88,10 +83,10 @@ function readTemplateContent(data) {
                 res({
                     template,
                     templateName: data.$templateName,
-                    orientation: orientationPage, 
-                    previewHTML: previewHTMLTemplate, 
-                    preview: previewPDF,
-                    customPagesHeaderFooter: pageHeaderFooterIds
+                    orientation, 
+                    previewHTML, 
+                    preview,
+                    customPagesHeaderFooter
                 });
             })
             .catch(rej);

@@ -16,7 +16,7 @@ const {
     libs = ['misc/mixin.js']
 } = process.env;
 
-let pdfGenerator = pdfProcessor.pdfGenerator({
+let pdfGenerator = pdfProcessor.pdfGeneratorInstance({
     BROWSER_NAME,
     URL_BROWSER,
     FILE_DIR,
