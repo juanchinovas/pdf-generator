@@ -12,8 +12,7 @@ const {
     FILE_DIR,
     PDF_DIR,
     PORT = 3000,
-    TEMPLATE_DIR,
-    libs = ['misc/mixin.js']
+    TEMPLATE_DIR
 } = process.env;
 
 let pdfGenerator = pdfProcessor.pdfGeneratorInstance({
@@ -23,7 +22,7 @@ let pdfGenerator = pdfProcessor.pdfGeneratorInstance({
     PDF_DIR,
     PORT,
     TEMPLATE_DIR,
-    libs
+    libs: ['misc/mixin.js','misc/testComponent.js']
 });
 const host = `http://localhost:${PORT}`;
 
