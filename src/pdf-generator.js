@@ -160,6 +160,7 @@ function processTemplate(data, pdfMergerDelegator) {
                     pdfMergerDelegator, 
                     pageEvalFn: page.$eval.bind(page)
                 });
+                
                 templateBuffer = buffer;
                 // Generate pdf with custom header y footer 
                 if (tempFile.customPagesHeaderFooter) {
@@ -176,7 +177,11 @@ function processTemplate(data, pdfMergerDelegator) {
                         pdfOptions.margin.top = _headerHTML.marginTop;
                         pdfOptions.margin.bottom = _footerHTML.marginBottom;
                         
-                        pdfOptions.pageRanges  = printPage.replace(/last|penult/g, (x) => x === 'penult'? totalPages - 1: x === 'last'? totalPages: x);
+                        pdfOptions.pageRanges  = printPage.replace(/last|penult|first/g, (x) => {
+                            return x === 'penult'? totalPages - 1: 
+                                   x === 'last'? totalPages: 
+                                   x === 'first'? 1: x
+                        });
                         
                         try {
                             pdfChunks.push(await page.pdf(pdfOptions));
@@ -199,7 +204,7 @@ function processTemplate(data, pdfMergerDelegator) {
                 templateType = 'text/html';
                 templateBuffer = Buffer.from(await page.content(), 'utf8');
             }
-
+            
             res({ fileName: `${tempFile.fileName}.pdf`, buffer: templateBuffer, templateType });
             templateHelper.deleteFile(`${_options.FILE_DIR}/${tempFile.fileName}.html`);
 
@@ -232,13 +237,14 @@ function resolvePdfTotalPage({pagePdfGenFn, pdfOptions, pdfMergerDelegator, page
                 const script = document.createElement("script");
                 const text = document.createTextNode(`
                     const key = 'totalPages';
-                    reactivesInstance.extraParams[key] = ${totalPages};
+                    reactiveInstance.extraParams[key] = ${totalPages};
                 `);
+                
                 script.appendChild(text);
                 body.appendChild(script);
             }, totalPages)
-            .then(() => {
-                return { buffer: pagePdfGenFn/*page.pdf*/(pdfOptions), totalPages };
+            .then(async () => {
+                return { buffer: await pagePdfGenFn/*page.pdf*/(pdfOptions), totalPages };
             });
         }
 

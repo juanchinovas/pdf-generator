@@ -54,7 +54,7 @@ function readTemplateContent(data) {
                     templateParts.push(`
                         ${_options.libs.map(s => '<script src="' + s + '"></script>').join('\n')}
                         <script>
-                            var reactivesInstance = null;
+                            var reactiveInstance = null;
                             window.onload = function () {
                                 var vueInit = {
                                     mixins: window.mixins,
@@ -69,10 +69,10 @@ function readTemplateContent(data) {
                                 });
                                 
                                 if (Vue.createApp) { // Vue v3
-                                    reactivesInstance = Vue.createApp(vueInit).mount('#app');
+                                    reactiveInstance = Vue.createApp(vueInit).mount('#app');
                                 } else {
                                     vueInit.el = '#app';
-                                    reactivesInstance = new Vue(vueInit);
+                                    reactiveInstance = new Vue(vueInit);
                                 }
                             }
                         </script></body></html>

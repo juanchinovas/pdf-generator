@@ -1,9 +1,9 @@
 const expect = require("chai").expect;
 const pdfGen = require("../pdf-generator");
 
-const URL_BROWSER = /*"/opt/google/chrome/google-chrome";*/
+const URL_BROWSER = "/opt/google/chrome/google-chrome";
                     /*'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'*/
-                    `C:\\Users\\jnovas\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe`;
+                    /*`C:\\Users\\jnovas\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe`*/;
 
 describe("Testing pdf generator file", () => {
 
@@ -44,7 +44,6 @@ describe("Testing pdf generator file", () => {
         init.processTemplate({})
         .then(() => {
             done("failed");
-            console.log("juahaha");
         })
         .catch( err => {
             expect(err).to.be.a('string').that.to.be.equal("No $templateName provided");
@@ -66,7 +65,7 @@ describe("Testing pdf generator file", () => {
             done("failed");
         })
         .catch( err => {
-            expect(err).to.be.a('string').that.to.be.equal(`ENOENT: no such file or directory, open \'/demo/templates/No_found.html\'`);
+            expect(err).to.be.a('string').that.to.be.equal(`ENOENT: no such file or directory, open \'../demo/templates/No_found.html\'`);
             done();
         })
         .finally(() => {
@@ -86,8 +85,6 @@ describe("Testing pdf generator file", () => {
             done("failed");
         })
         .catch( err => {
-            
-            console.log(err);
             expect(err).to.be.a('string').that.match(/net::ERR_CONNECTION_REFUSED at/ig);
             done();
         })
@@ -110,9 +107,10 @@ describe("Testing pdf generator file", () => {
         init.processTemplate({$templateName: "Template1"})
         .then((res) => {
             expect(res).to.be.an('object').that.is.not.empty;
-            expect(res).to.have.all.keys('fileName', 'buffer');
+            expect(res).to.have.all.keys('fileName', 'buffer', 'templateType');
             expect(res.fileName).to.be.a("string").that.match(/\w+_\d+.pdf/);
             expect(res.buffer).to.be.an.instanceOf(Buffer);
+            expect(res.templateType).that.match(/pdf|html/);
             done();
         })
         .catch( err => {
