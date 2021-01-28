@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer-core');
 const templateInitializer = require("./helper");
 const logger = require("./logger");
 
-let _options, templateHelper, browser, page;
+let _options, templateHelper, browser, page, pdfMergerDelegator;
 
 const pageEvents = {
     'pageerror': err => {
@@ -101,11 +101,10 @@ async function closeBrowser() {
  * Load the HTML template file
  * 
  * @param data - {$templateName: string, $parameters: any, $extraParams: any}
- * @param pdfMergerDelegator - 
  * 
  * @returns Promise<{fileName:string, buffer: Buffer}>
  */
-function processTemplate(data, pdfMergerDelegator) {
+function processTemplate(data) {
 
     return new Promise(async (res, rej) => {
 
@@ -157,7 +156,6 @@ function processTemplate(data, pdfMergerDelegator) {
                 const {buffer, totalPages} = await resolvePdfTotalPage({ 
                     pagePdfGenFn: page.pdf.bind(page), 
                     pdfOptions, 
-                    pdfMergerDelegator, 
                     pageEvalFn: page.$eval.bind(page)
                 });
                 
@@ -220,13 +218,11 @@ function processTemplate(data, pdfMergerDelegator) {
 /**
  * Generate the PDF to resolve the total pages of it.
  * 
- * @param Function pagePdfGenFn
- * @param {*} pdfOptions
- * @param {*} pdfMergerDelegator
+ * @param {*} parmas
  * 
  * @returns Promise<Buffer>
  */
-function resolvePdfTotalPage({pagePdfGenFn, pdfOptions, pdfMergerDelegator, pageEvalFn}) {
+function resolvePdfTotalPage({pagePdfGenFn, pdfOptions, pageEvalFn}) {
     return pagePdfGenFn/*page.pdf*/(pdfOptions)
     .then(async (buffer) => {
         if (pdfMergerDelegator) {
@@ -334,6 +330,7 @@ module.exports.initialize = function (options) {
         TEMPLATE_DIR,
         libs
     };
+    pdfMergerDelegator = options.pdfMergerDelegator;
 
     templateHelper = templateInitializer.initialize(_options);
 

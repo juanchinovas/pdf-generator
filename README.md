@@ -52,12 +52,14 @@ let pdfGenerator = pdfProcessor.pdfGeneratorInstance({
     PDF_DIR,
     PORT,
     TEMPLATE_DIR,
-    libs: [/*VueJs mixin files*/]
+    libs: [/*VueJs mixin files*/],
+    pdfMergerDelegator
 });
 ```
 > Use `process.env` if you passed the environment variables using node command. I recommend use a `.env` file and the package [dotenv](https://www.npmjs.com/package/dotenv).
 
 > `libs` property in the `Options` object pass to `pdfGeneratorInstance` function is optional, is a list of VueJs mixin modules o components to be injected into the template. Can be pass it a VueJs library url by default is use this https://cdn.jsdelivr.net/npm/vue
+> See `pdfMergerDelegator` info in [PDF Merger Delegator](#pdf-merger-delegator).
 
 ## Generate PDF in memory
 ```typescript
@@ -72,12 +74,11 @@ templateData.$extraParams.preview: true;
 templateData.$extraParams.previewHTML: false;
 
 pdfGenerator
-    .processTemplate(templateData, pdfMergerDelegator)
+    .processTemplate(templateData)
     .then(processed => {
         /*You code here*/
     })
 ```
-> See `pdfMergerDelegator` info in [PDF Merger Delegator](#pdf-merger-delegator).
 ## Generate HTML in memory
 ```typescript
 const templateData = {
@@ -91,12 +92,11 @@ templateData.$extraParams.preview: true;
 templateData.$extraParams.previewHTML: true;
 
 pdfGenerator
-    .processTemplate(templateData, pdfMergerDelegator)
+    .processTemplate(templateData)
     .then(processed => {
         /*You code here*/
     })
 ```
-> See `pdfMergerDelegator` info in [PDF Merger Delegator](#pdf-merger-delegator).
 ## Different headers/footers
 To use different headers and footers in the PDF pages generated. Have to pass the property `customPagesHeaderFooter` passing the array of string with the page where the header/footer must to be added.
 
@@ -191,13 +191,14 @@ interface Options {
     FILE_DIR: string; // <TemporalHTMLFileDir> - Where to save temporary files
     PDF_DIR: string; // <TemporalPDFFileDir> - Where to save the pdf generated
     TEMPLATE_DIR: string; // <TemplateDir> - Where the VueJs/HTML templates live
+    BROWSER_NAME?: string; // chrome|firefox - default chrome
     PORT: number; // Port used in NodeJs service
     printingMarginTop?: string | number; // default 2.54cm
     printingMarginBottom?: string | number; // default 2.54cm
     printingMarginLeft?: string | number; // default 2.54cm
     printingMarginRight?: string | number; // default 2.54cm
-    BROWSER_NAME?: string; // chrome|firefox - default chrome
     libs: Array<string> // List of js files used on the templates
+    pdfMergerDelegator?: PdfMergerDelegator; // Object to merge the different pdf create with distinct header/footer and get the total page.
 }
 ```
 
@@ -223,11 +224,10 @@ interface PdfGenerator {
     /**
      * Process the VueJs template to generate PDF
      * @param ParamData
-     * @param PdfMergerDelegator optional
      * 
      * @returns Promise<PDFGeneratorResult>
      */
-    processTemplate: (data: ParamData, pdfMergerDelegator?: PdfMergerDelegator) => Promise<PDFGeneratorResult>;
+    processTemplate: (data: ParamData) => Promise<PDFGeneratorResult>;
     /**
      * Dispose the puppeteer instance
      */

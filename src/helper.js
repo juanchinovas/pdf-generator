@@ -70,9 +70,11 @@ function readTemplateContent(data) {
                                 
                                 if (Vue.createApp) { // Vue v3
                                     reactiveInstance = Vue.createApp(vueInit).mount('#app');
+                                    console.log("Vue v3.x");
                                 } else {
                                     vueInit.el = '#app';
                                     reactiveInstance = new Vue(vueInit);
+                                    console.log("Vue v2.x");
                                 }
                             }
                         </script></body></html>

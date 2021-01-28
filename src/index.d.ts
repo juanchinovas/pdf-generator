@@ -3,16 +3,17 @@ export interface Options {
     FILE_DIR: string;
     PDF_DIR: string;
     TEMPLATE_DIR: string;
+    BROWSER_NAME?: string;
     PORT: number;
     printingMarginTop?: string | number;
     printingMarginBottom?: string | number;
     printingMarginLeft?: string | number;
     printingMarginRight?: string | number;
-    BROWSER_NAME?: string;
     /**
      * Array list of javascript files to include in every templates.
      */
     libs: Array<string>;
+    pdfMergerDelegator?: PdfMergerDelegator;
 };
 export interface ParamData {
     $templateName: string,
@@ -40,11 +41,10 @@ export interface PDFGenerator {
     /**
      * Process the VueJs template to generate PDF
      * @param ParamData
-     * @param PdfMergerDelegator optional
      * 
      * @returns Promise<PDFGeneratorResult>
      */
-    processTemplate: (data: ParamData, pdfMergerDelegator?: PdfMergerDelegator) => Promise<PDFGeneratorResult>;
+    processTemplate: (data: ParamData) => Promise<PDFGeneratorResult>;
     /**
      * Dispose the puppeteer instance
      */

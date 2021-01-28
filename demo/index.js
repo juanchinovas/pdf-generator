@@ -22,7 +22,8 @@ let pdfGenerator = pdfProcessor.pdfGeneratorInstance({
     PDF_DIR,
     PORT,
     TEMPLATE_DIR,
-    libs: ['misc/mixin.js','misc/testComponent.js']
+    libs: ['/misc/testComponent.js', '/misc/header-component.js', '/misc/footer-component.js', '/misc/mixin.js'],
+    pdfMergerDelegator
 });
 const host = `http://localhost:${PORT}`;
 
@@ -49,7 +50,7 @@ app.get("/test-pdf/:templateName", (req, res) => {
         };
 
         pdfGenerator
-            .processTemplate(templateData, pdfMergerDelegator)
+            .processTemplate(templateData)
             .then(processed => {
                 res.setHeader(
                     "Content-Disposition",
@@ -85,7 +86,7 @@ app.post("/documents", (req, res) => {
             $extraParams: getExtraParams(data, ["parameters"])
         };
         pdfGenPromise = pdfGenerator
-            .processTemplate(templateData, pdfMergerDelegator);
+            .processTemplate(templateData);
     }
 
     pdfGenPromise.then(processed => {
@@ -124,7 +125,7 @@ app.get("/documents/:templateName/preview", (req, res) => {
         };
 
         pdfGenerator
-            .processTemplate(templateData, pdfMergerDelegator)
+            .processTemplate(templateData)
             .then(processed => {
                 res.setHeader(
                     "Content-Disposition",
