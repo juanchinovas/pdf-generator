@@ -1,13 +1,13 @@
 {
   "name": "html-pdf-generator",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "NodeJs plugin to generate PDF from HTML template using Vuejs and puppeteer",
   "main": "index.js",
   "scripts": {
     "start": "cd ../demo/ && npm i && npm start",
-    "build2npm": "cd ../compiled/ && npm i --production && npm run run-gulp",
+    "build2npm": "cd ../compiled/ && npm i && npm run run-gulp",
     "config": "npm run build2npm && npm run start",
-    "pack": "npm test && cd ../compiled/ && npm i --production && npm run run-pack",
+    "pack": "npm test && cd ../compiled/ && npm i && npm run run-pack",
     "publish": "npm run pack && cd ../compiled/ && npm run run-publish",
     "test": "mocha test --exit",
     "config-dev": "npm i && npm run config"

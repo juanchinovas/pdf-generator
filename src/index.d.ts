@@ -34,6 +34,7 @@ export interface ExtraParamData {
 };
 export interface PDFGeneratorResult {
     fileName: string;
+    totalPages: number;
     buffer: Buffer | Array<Buffer>;
     templateType: 'application/pdf' | 'text/html' | 'array/pdf';
 };

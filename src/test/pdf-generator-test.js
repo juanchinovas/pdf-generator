@@ -11,7 +11,8 @@ describe("Testing pdf generator file", () => {
         try {
             const init = pdfGen.initialize();
         } catch (err) {
-            expect(err.message).to.be.a('string').that.to.be.equal("Cannot destructure property `BROWSER_NAME` of 'undefined' or 'null'.");
+            console.log(err.message);
+            expect(err.message).to.be.a('string').that.to.be.equal("The Initializer options cannot be null");
         }
     });
     it("should #initialize() returns an object with two functions", () => {
@@ -107,7 +108,7 @@ describe("Testing pdf generator file", () => {
         init.processTemplate({$templateName: "Template1"})
         .then((res) => {
             expect(res).to.be.an('object').that.is.not.empty;
-            expect(res).to.have.all.keys('fileName', 'buffer', 'templateType');
+            expect(res).to.have.all.keys('fileName', 'buffer', 'templateType', 'totalPages');
             expect(res.fileName).to.be.a("string").that.match(/\w+_\d+.pdf/);
             expect(res.buffer).to.be.an.instanceOf(Buffer);
             expect(res.templateType).that.match(/pdf|html/);

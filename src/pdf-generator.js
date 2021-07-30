@@ -123,7 +123,7 @@ function processTemplate(data) {
 
             logger.writeLog({ text: `Loading ${urlTemplate}`, type: "LOG" });
             await page.goto(urlTemplate, { waitUntil: 'networkidle0' });
-
+            let _totalPages = 0
             if (tempFile.previewHTML !== true) {
                 logger.writeLog({ text: `Creating PDF`, type: "LOG" });
                 
@@ -160,6 +160,7 @@ function processTemplate(data) {
                 });
                 
                 templateBuffer = buffer;
+                _totalPages = totalPages;
                 // Generate pdf with custom header y footer 
                 if (tempFile.customPagesHeaderFooter) {
                     const pdfChunks = [];
@@ -203,7 +204,8 @@ function processTemplate(data) {
                 templateBuffer = Buffer.from(await page.content(), 'utf8');
             }
             
-            res({ fileName: `${tempFile.fileName}.pdf`, buffer: templateBuffer, templateType });
+            res({ totalPages: _totalPages, fileName: `${tempFile.fileName}.pdf`, buffer: templateBuffer, templateType });
+            
             templateHelper.deleteFile(`${_options.FILE_DIR}/${tempFile.fileName}.html`);
 
         } catch (err) {
@@ -303,6 +305,10 @@ async function __getHeaderTemplateFromTemplate(pageEvalFn, pageHeaderId = "#page
 }
 
 module.exports.initialize = function (options) {
+    if (!options) {
+        throw new Error("The Initializer options cannot be null");
+    }
+
     const {
         BROWSER_NAME = "chrome",
         URL_BROWSER,
