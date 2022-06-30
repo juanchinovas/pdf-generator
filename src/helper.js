@@ -187,7 +187,7 @@ module.exports.initialize = function (options) {
     };
 
     if (_options.libs && Array.isArray(_options.libs) && _options.libs.filter(s => /vue(\.min\.+?js)*/.test(s)).length === 0) {
-        _options.libs.unshift("https://cdn.jsdelivr.net/npm/vue");
+        _options.libs.unshift("https://cdn.jsdelivr.net/npm/vue@2");
     }
     
     return {

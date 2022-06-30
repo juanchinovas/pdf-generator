@@ -1,6 +1,6 @@
 {
   "name": "html-pdf-generator",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "NodeJs plugin to generate PDF from HTML template using Vuejs and puppeteer",
   "main": "index.js",
   "scripts": {
