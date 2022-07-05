@@ -54,22 +54,20 @@ function readTemplateContent(data) {
                     templateParts.push(`
                         ${_options.libs.map(s => '<script src="' + s + '"></script>').join('\n')}
                         <script>
-                            const mejorVueVersion = (/^(2|3)(?=\.)/.exec(Vue.version) || []).shift() || '2';
-                            const createVue = 'createVue' + mejorVueVersion + 'Instance';
-                            
-                            // Vue v2.x
-                            ${createVue2Instance}
-                            // Vue v3.x
-                            ${createVue3Instance}
+                            Vue.component('v-style', {
+                                render: function (createElement) {
+                                    this.$slots.default.unshift({ text: '* {\\n\\t-webkit-print-color-adjust: exact;\\n\\tcolor-adjust: exact;\\n}' });
+                                    return createElement('style', this.$slots.default);
+                                }
+                            });
 
                             window.onload = function () { 
                                 const vueInit = {
-                                    style: { text: '* {\\n\\t-webkit-print-color-adjust: exact;\\n\\tcolor-adjust: exact;\\n}' },
                                     el: '#app',
                                     mixins: window.mixins,
                                     data: () => (${JSON.stringify(Object.assign(param, data.$parameters))})
                                 };
-                                window.reactiveInstance = window[createVue](Vue, vueInit);
+                                window.reactiveInstance = new Vue(vueInit);
                             }
                         </script></body></html>
                     `);
@@ -172,41 +170,6 @@ function getObjectParams(matches, template) {
     return obj;
 }
 
-function createVue2Instance(Vue, { style, ...vueInit }) {
-    // Allow style inside Vue root
-    Vue.component('v-style', {
-        render: function (createElement) {
-            this.$slots.default.push(style);
-            return createElement('style', this.$slots.default);
-        }
-    });
-
-    console.log("Vue v2.x");
-    return new Vue(vueInit);
-}
-
-function createVue3Instance(Vue, { style, ...vueInit }) {
-    // Allow style inside Vue root
-    customElements.define(
-        'v-style',
-        Vue.defineCustomElement({
-            render() {
-                console.log(this);
-                return [
-                    Vue.h('style', style.text),
-                    Vue.h('style', this.$slots.default)
-                ]
-            }
-        })
-    );
-
-    const app = Vue.createApp(vueInit);
-    app.config.compilerOptions.isCustomElement = tag => tag.startsWith('v-');
-
-    console.log("Vue v3.x");
-    return app;
-}
-
 module.exports.initialize = function (options) {
     _options = {
         FILE_DIR: options.FILE_DIR,
@@ -216,7 +179,7 @@ module.exports.initialize = function (options) {
     };
 
     if (_options.libs && Array.isArray(_options.libs) && _options.libs.filter(s => /vue(\.min\.+?js?)*/.test(s)).length === 0) {
-        _options.libs.unshift("https://cdn.jsdelivr.net/npm/vue@3");
+        _options.libs.unshift("https://cdn.jsdelivr.net/npm/vue@2");
     }
     
     return {
