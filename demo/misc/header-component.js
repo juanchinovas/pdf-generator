@@ -1,4 +1,4 @@
-Vue.component('header-component', {
+registerComponent('header-component', {
     props: ["title"],
     created: function(){
         console.log("On component header");
@@ -25,4 +25,4 @@ Vue.component('header-component', {
             }
         </v-style>
     </header>`
-})
+});

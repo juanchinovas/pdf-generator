@@ -15,7 +15,7 @@ describe("Testing helper file functionality", () => {
     describe("Reading Template's parameters", () => {
     
         it("Read params from ../demo/templates/Template1.html", (done) => {
-            helper.getTemplateParameters("Template1")
+            helperIni.getTemplateParameters("Template1")
             .then((params) => {
                 expect(params).to.be.an('object').that.is.empty;
                 expect(params).to.not.have.any.keys('param1', 'param2');
@@ -26,7 +26,7 @@ describe("Testing helper file functionality", () => {
             });
         });
         it("Read params from ../demo/templates/Template3.html", (done) => {
-            helper.getTemplateParameters("Template3")
+            helperIni.getTemplateParameters("Template3")
             .then((params) => {
                 expect(params).to.be.an('object').that.is.not.empty;
                 expect(params).to.have.any.keys('param1', 'param2');
@@ -41,7 +41,7 @@ describe("Testing helper file functionality", () => {
 
     it("Initializer return", () => {
         expect(helperIni).to.be.an('object').that.is.not.empty;
-        expect(helperIni).to.have.all.keys('prepareTemplate', 'deleteFile', 'saveFile', 'dispose');
+        expect(helperIni).to.have.all.keys('prepareTemplate', 'deleteFile', 'saveFile', 'dispose', 'getTemplateParameters');
         expect(helperIni).to.have.property('prepareTemplate').that.is.a('function');
         expect(helperIni).to.have.property('deleteFile').that.is.a('function');
         expect(helperIni).to.have.property('saveFile').that.is.a('function');
@@ -64,6 +64,15 @@ describe("Testing helper file functionality", () => {
         });
         it("Deleting file created using ../demo/templates/Template1.html", (done) => {
             try {
+                helperIni.prepareTemplate();
+                done("Oops");
+            } catch (err) {
+                expect(err).to.Throw(new Error("No data provided"));
+                done();
+            }
+        });
+        it("should throw when ../demo/templates/Template1.html", (done) => {
+            try {
                 helperIni.deleteFile(`../demo/temp/${fileName}.html`);
                 done();
             } catch (err) {
@@ -72,6 +81,22 @@ describe("Testing helper file functionality", () => {
             
         });
     });
+    describe("Delete template file", () => {
+        let fileName = "";
+        it("Create a file using ../demo/templates/Template1.html", (done) => {
+            helperIni.prepareTemplate({$templateName: "Template1", $parameters: {}})
+            .then((data) => {
+                fileName = data.fileName;
+                expect(data).to.be.an('object').that.is.not.empty;
+                expect(data).to.have.property('fileName').that.match(/\w+_\d+/);
+                done()
+            })
+            .catch((err) => {
+                done(err);
+            });
+        }); 
+    });
+
     after(() => {
         helperIni = null;
     })

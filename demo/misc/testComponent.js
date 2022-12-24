@@ -1,7 +1,7 @@
-Vue.component('test-component', {
+registerComponent('test-component',  {
     props: ["propTop"],
     created: function(){
         console.log("On component test component");
     },
     template: '<div><h5>I am a component content on template {{propTop}}</h5></div>'
-})
+});

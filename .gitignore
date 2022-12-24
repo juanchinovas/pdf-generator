@@ -4,3 +4,4 @@ temp/
 compiled/npm/**
 package-lock.json
 .DS_store
+coverage/

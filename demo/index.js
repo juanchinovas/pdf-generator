@@ -2,7 +2,7 @@ const compression = require("compression");
 const express = require("express");
 const bodyParser = require("body-parser");
 const pdfProcessor = require("html-pdf-generator");
-const pdfMergerDelegator = require("./pdfMergerDelegator");
+const pdfMergeDelegator = require("./pdfMergeDelegator");
 const fs = require("fs");
 
 const app = express();
@@ -22,8 +22,8 @@ let pdfGenerator = pdfProcessor.pdfGeneratorInstance({
     PDF_DIR,
     PORT,
     TEMPLATE_DIR,
-    libs: ['/misc/testComponent.js', '/misc/header-component.js', '/misc/footer-component.js', '/misc/mixin.js'],
-    pdfMergerDelegator
+    libs: ['/misc/footer-component.js', '/misc/testComponent.js', '/misc/mixin.js'],
+    pdfMergeDelegator
 });
 const host = `http://localhost:${PORT}`;
 
@@ -143,9 +143,8 @@ app.get("/documents/:templateName/preview", (req, res) => {
 
 });
 
-
 app.get("/templates/:templateName/parameters", (req, res) => {
-    pdfProcessor
+    pdfGenerator
         .getTemplateParameters(req.params.templateName)
         .then(params => {
             res.json({
@@ -154,7 +153,8 @@ app.get("/templates/:templateName/parameters", (req, res) => {
             });
         })
         .catch(err => {
-            res.status(400).send({ message: err, code: -17 });
+            console.log(err);
+            res.status(400).send({ message: err.message, code: -17 });
         });
 });
 

@@ -12,6 +12,10 @@ module.exports.readFile = function(fileDir) {
     });
 };
 
+module.exports.readFileAsync = function(fileDir) {
+    return fs.readFileSync(fileDir, { encoding: 'utf8' });
+};
+
 module.exports.saveFile = function(fileDir, data) {
     return new Promise( (res, rej) => {
         fs.writeFile(fileDir, data, (err) => {
@@ -43,7 +47,7 @@ module.exports.ensureExitsDir = function(dirs) {
 };
 
 module.exports.deleteFile = function(file) {
-    let exists = fs.existsSync(file);
+    const exists = fs.existsSync(file);
     if (exists) {
         logger.writeLog({ text: `Delete file ${file}`, type: "LOG" });
         fs.unlink(file, function(err) {

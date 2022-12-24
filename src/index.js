@@ -1,5 +1,4 @@
 const pdfGenerator = require("./pdf-generator");
-const helper = require("./helper");
 
 /**
  * Initialize PDF generator
@@ -8,11 +7,3 @@ const helper = require("./helper");
  * @returns {*} pdfGenerator
  */
 exports.pdfGeneratorInstance = pdfGenerator.initialize;
-
-/**
- * Read all parameters from a template
- *
- * @param string templateName
- * @returns Promise<{*}>
- */
-exports.getTemplateParameters = helper.getTemplateParameters;

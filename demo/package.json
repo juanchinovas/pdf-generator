@@ -28,7 +28,7 @@
       "PORT": 3000,
       "FILE_DIR": "./temp",
       "PDF_DIR": "./temp/pdfs",
-      "URL_BROWSER": "/opt/google/chrome/google-chrome",
+      "URL_BROWSER": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
       "TEMPLATE_DIR": "./templates",
       "BROWSER_NAME": "chrome"
     }

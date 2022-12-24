@@ -1,12 +1,10 @@
 const fileHelper = require("./file-helper");
 
-let _options;
-
 /**
  * Read template content and prepare a html template with the data to be show on the headless browser
  * @param {*} data
  */
-function readTemplateContent(data) {
+function readTemplateContent(data, options) {
     if (!data) {
         throw new Error("No data provided");
     }
@@ -32,9 +30,9 @@ function readTemplateContent(data) {
         }
 
         fileHelper
-            .readFile(`${_options.TEMPLATE_DIR}/${data.$templateName}.html`)
+            .readFile(`${options.TEMPLATE_DIR}/${data.$templateName}.html`)
             .then(templateData => templateData.toString("utf8"))
-            .then(template => {
+            .then(async (template) => {
                 let orientation, previewHTML, preview, customPagesHeaderFooter;
 
                 if (!("noData" in data)) {
@@ -51,26 +49,14 @@ function readTemplateContent(data) {
                     preview = extraParams.preview;
                     customPagesHeaderFooter = extraParams.customPagesHeaderFooter;
 
-                    templateParts.push(`
-                        ${_options.libs.map(s => '<script src="' + s + '"></script>').join('\n')}
-                        <script>
-                            Vue.component('v-style', {
-                                render: function (createElement) {
-                                    this.$slots.default.unshift({ text: '* {\\n\\t-webkit-print-color-adjust: exact;\\n\\tcolor-adjust: exact;\\n}' });
-                                    return createElement('style', this.$slots.default);
-                                }
-                            });
-
-                            window.onload = function () { 
-                                const vueInit = {
-                                    el: '#app',
-                                    mixins: window.mixins,
-                                    data: () => (${JSON.stringify(Object.assign(param, data.$parameters))})
-                                };
-                                window.reactiveInstance = new Vue(vueInit);
-                            }
-                        </script></body></html>
-                    `);
+                    templateParts.push(options.libs.map(s => s.script ?? `<script src="${s}"></script>`).join('\n'));
+                    templateParts.push(`<script>
+                        window.onload = function () {
+                            const [App, elemId] = initVue(${JSON.stringify(Object.assign(param, data.$parameters))});
+                            reactiveInstance = elemId ? App.mount(elemId) : new Vue(App);
+                        }
+                    </script>`);
+                    templateParts.push('</body></html>');
                     template = templateParts.join('');
                 }
 
@@ -90,8 +76,12 @@ function readTemplateContent(data) {
  * Save the template with its data as html file to be consume for the headless browser
  * @param {*} templateName
  * @param {*} template
+ * @param {*} fileDir
+ * 
+ * @returns {*}
+ * 
  */
-function saveOnTemp(templateName, template) {
+async function saveOnTemp(templateName, template, fileDir) {
     var fileName = `${templateName}_${new Date().getTime()}`;
 
     if (templateName === "external_template") {
@@ -101,11 +91,12 @@ function saveOnTemp(templateName, template) {
         });
     }
 
-    return fileHelper
-        .saveFile(`${_options.FILE_DIR}/${fileName}.html`, template)
-        .then(() => ({
-            fileName
-        }));
+    await fileHelper
+        .saveFile(`${fileDir}/${fileName}.html`, template);
+
+    return ({
+        fileName
+    });
 }
 
 /**
@@ -114,7 +105,7 @@ function saveOnTemp(templateName, template) {
  */
 function _getTemplateParameters(template) {
     var matched = "";
-    var regex = /((?:\{\{)\s*([\d\w$]+)\s*(?:\}\}))|(?:v-for=.+in\s)([\d\w$]+)|(?:\{\{)\s*[\d\w$\.]+\(([\d\w$]+),*[\w\s\d"'-]*\)(?:\}\})|(?:\{\{)([\d$\w]+)\.([\d$\w]+)(?:\}\})/mgi;
+    var regex = /((?:\{\{)\s*([\d\w$]+)\s*(?:\}\}))|(?:v-for=.+(in|of)\s)([\.\d\w$]+)|(?:\{\{)\s*[\d\w$\.]+\(([\d\w$]+),*[\w\s\d"'-]*\)(?:\}\})|(?:\{\{)([\d$\w]+)\.([\d$\w]+)(?:\}\})/mgi;
     var objResult = {};
     var key = "";
     let matches = null;
@@ -148,7 +139,7 @@ function _getTemplateParameters(template) {
  */
 function getObjectParams(matches, template) {
    var arrayName = new RegExp(
-        `"\\(*([\\d\\w$]+),*.*\\)*\\sin\\s${matches[matches.length - 1]}`,
+        `"\\(*([\\d\\w$]+),*.*\\)*\\s(?:in|of)\\s${matches[matches.length - 1]}`,
         "igm"
     ).exec(matches[0]) || [null, matches];
     var regex = new RegExp(`${arrayName[1]}\\.([\\d\\w$]+)`, "igm");
@@ -171,44 +162,57 @@ function getObjectParams(matches, template) {
 }
 
 module.exports.initialize = function (options) {
-    _options = {
+    let _options = {
         FILE_DIR: options.FILE_DIR,
         PDF_DIR: options.PDF_DIR,
         TEMPLATE_DIR: options.TEMPLATE_DIR,
         libs: (options.libs || [])
     };
-
-    if (_options.libs && Array.isArray(_options.libs) && _options.libs.filter(s => /vue(\.min\.+?js?)*/.test(s)).length === 0) {
-        _options.libs.unshift("https://cdn.jsdelivr.net/npm/vue@2");
+    let vueLib = _options.libs && Array.isArray(_options.libs) && _options.libs.find(s => /vue(\.min\.+?js?)*/.test(s));
+    if (!vueLib) {
+        vueLib = "https://cdn.jsdelivr.net/npm/vue@3";
     }
+
+    _options.libs = [
+        vueLib,
+        { script: `<script>${fileHelper.readFileAsync(`${__dirname}/script-factory.js`)}</script>`},
+        ..._options.libs.filter(lib => lib !== vueLib)
+    ];
     
     return {
-        prepareTemplate: function (data) {
-            return fileHelper
-                .ensureExitsDir([_options.FILE_DIR, _options.PDF_DIR])
-                .then(() =>
-                    readTemplateContent(data).then(processedData =>
-                        saveOnTemp(
-                            processedData.templateName,
-                            processedData.template
-                        ).then((fileName) => ({
-                            ...fileName,
-                            ...processedData
-                        }))
-                    )
-                );
+        prepareTemplate: async (data) => {
+            await fileHelper.ensureExitsDir([_options.FILE_DIR, _options.PDF_DIR]);
+            const processedData = await readTemplateContent(data, _options);
+            const fileName = await saveOnTemp(
+                processedData.templateName,
+                processedData.template,
+                _options.FILE_DIR
+            );
+            return ({
+                ...fileName,
+                ...processedData
+            });
         },
         deleteFile: fileHelper.deleteFile,
         saveFile: fileHelper.saveFile,
         dispose: () => {
             _options = null;
+        },
+
+        /**
+         * Read template parameter from source code.
+         * 
+         * Need to remove global op
+         * 
+         * @param {*} templateName 
+         * @returns 
+         */
+        getTemplateParameters: async (templateName) => {
+            const processedData = await readTemplateContent({
+                $templateName: templateName,
+                noData: true
+            }, _options);
+            return _getTemplateParameters(processedData.template);
         }
     };
-};
-
-module.exports.getTemplateParameters = function (templateName) {
-    return readTemplateContent({
-        $templateName: templateName,
-        noData: true
-    }).then(processedData => _getTemplateParameters(processedData.template));
 };

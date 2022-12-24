@@ -14,6 +14,7 @@
             }
             pre {
                 background-color: #F0F0F0;
+                text-align: left;
             }
             code {
                 color:blue;
@@ -97,6 +98,14 @@
                     id="header-page-last">
                     <div>
                         <label>!!! I'm in the Last page header !!!</label>
+                        <div>
+                            <div>
+                                <span class="title"></span>
+                            </div>
+                            <div>
+                                <span class="url"></span>
+                            </div>
+                        </div>
                     </div>
                     <v-style>
                         #header-page-last {
@@ -165,7 +174,7 @@
                 <div>param#5: &lang;{{param5}}&rang;</div>
                 <div>param#6: &lang;{{param6}}&rang;</div>
                 <p>{{extraParams}}</p>
-                <div>
+                <div style="page-break-before: always;">
                     <pre>
                         <code>{{param7}}</code>
                     </pre>
@@ -228,7 +237,7 @@
                     id="footer-page-2-penult"
                     class="footer">
                     <span class="date"></span>
-                    <span style="text-transform: uppercase;">pdf-generator 2020&copy;</span>
+                    <span style="text-transform: uppercase;">pdf-generator {{(new Date()).getFullYear()}}&copy;</span>
                     <v-style>
                         #footer-page-2-penult {
                             font-size: 8px;
@@ -257,7 +266,7 @@
                     id="footer-page-last"
                     class="footer">
                     <span class="date"></span>
-                    <span style="text-transform: uppercase">pdf-generator 2020&copy;</span>
+                    <span style="text-transform: uppercase">pdf-generator {{(new Date()).getFullYear()}}&copy;</span>
                     <v-style>
                         #footer-page-last {
                             font-size: 8px;
