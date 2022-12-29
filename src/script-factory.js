@@ -1,7 +1,7 @@
-function registerComponent(name, componentInfo) {
+Vue.component = Vue.component ?? function (name, componentInfo) {
     window.__customComponents = window.__customComponents ?? [];
     window.__customComponents.push({ name, componentInfo });
-}
+};
 
 function initVue(templateData) {
     const vueFactory = ((Vue.createApp && initVue3) || initVue2);

@@ -1,4 +1,4 @@
-registerComponent('test-component',  {
+Vue.component('test-component',  {
     props: ["propTop"],
     created: function(){
         console.log("On component test component");

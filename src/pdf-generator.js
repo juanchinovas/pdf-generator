@@ -2,8 +2,6 @@ const puppeteer = require('puppeteer-core');
 const templateInitializer = require("./helper");
 const logger = require("./logger");
 
-let browser, page;
-
 const pageEvents = {
     'pageerror': err => {
         logger.writeLog({ text: err, type: "ERROR" });
@@ -25,7 +23,7 @@ const pageEvents = {
                     return m._remoteObject.value;
                 }
 
-                return undefined;
+                return [];
             });
         logger.writeLog({ text: msgs.join(" "), type: message.type().substr(0, 3).toUpperCase() });
     },
@@ -42,58 +40,52 @@ const pageEvents = {
 /**
  * Initialize headless browser and new page
  */
-async function init(options) {
-
-    if (browser && page) {
-        return [browser, page];
-    }
-
-    if (!!!options.URL_BROWSER) {
+async function init(options, browser) {
+    if (!options.URL_BROWSER) {
         throw new Error("No target browser found");
     }
 
     logger.writeLog({ text: "Launching Browser", type: "LOG" });
-    const _browser = await puppeteer.launch({
+
+    browser = browser ?? await puppeteer.launch({
         executablePath: options.URL_BROWSER,
         product: options.BROWSER_NAME
     });
 
     logger.writeLog({ text: "Starting Page", type: "LOG" });
-    const _page = await _browser.newPage();
+    const page = await browser.newPage();
 
     for (let event in pageEvents) {
         if (pageEvents.hasOwnProperty(event)) {
-            _page.on(event, pageEvents[event]);
+            page.on(event, pageEvents[event]);
         }
     }
 
-    return [_browser, _page];
+    return [browser, page];
 };
 
 
 /**
  * Dispose everything, remove page events and close the headless browser
  */
-async function closeBrowser({ templateHelper, browser, page }) {
+async function closeBrowser({ templateHelper, browser }) {
+    logger.writeLog({ text: "Closing Browser", type: "LOG" });
     if (templateHelper) {
         templateHelper.dispose();
         templateHelper = null;
     }
 
-    if (page) {
+    const pages = await browser.pages();
+    for (const page of pages) {
         for (let event in pageEvents) {
             if (pageEvents.hasOwnProperty(event)) {
                 page.off(event, pageEvents[event]);
             }
         }
-
-        logger.writeLog({ text: "Closing Browser", type: "LOG" });
-        page = null;
     }
 
     if (browser) {
         await browser.close();
-        browser = null;
     }
 };
 
@@ -105,13 +97,9 @@ async function closeBrowser({ templateHelper, browser, page }) {
  * 
  * @returns Promise<{fileName:string, buffer: Buffer}>
  */
-function processTemplate({ data, options, pdfMergeDelegator, templateHelper }) {
+function generatePdfFromTemplate({ data, options, pdfMergeDelegator, templateHelper, page }) {
     return new Promise(async (res, rej) => {
         try {
-            const [_browser, _page] = await init(options);
-            browser = _browser;
-            page = _page;
-
             let tempFile = await templateHelper.prepareTemplate(data);
             let urlTemplate = `${options.templateServerUrl}/${tempFile.fileName}.html`;
             let templateType = 'application/pdf';
@@ -119,7 +107,7 @@ function processTemplate({ data, options, pdfMergeDelegator, templateHelper }) {
             let totalPages = 0
 
             if (tempFile.urlTemplate) {
-                urlTemplate = tempFile.urlTemplate || urlTemplate;
+                urlTemplate = tempFile.urlTemplate;
             }
 
             logger.writeLog({ text: `Loading ${urlTemplate}`, type: "LOG" });
@@ -128,8 +116,8 @@ function processTemplate({ data, options, pdfMergeDelegator, templateHelper }) {
             if (tempFile.previewHTML !== true) {
                 logger.writeLog({ text: `Creating PDF`, type: "LOG" });
                 
-                let _footerHTML = await __getFooterTemplateFromTemplate(page.$eval.bind(page), options);
-                let _headerHTML = await __getHeaderTemplateFromTemplate(page.$eval.bind(page), options);
+                let _footerHTML = await __getFooterTemplateFromTemplate(page, options);
+                let _headerHTML = await __getHeaderTemplateFromTemplate(page, options);
                 const pdfOptions = {
                     path: `${options.PDF_DIR}/${tempFile.fileName}.pdf`,
                     format: options.paperFormat ?? 'Letter',
@@ -150,16 +138,17 @@ function processTemplate({ data, options, pdfMergeDelegator, templateHelper }) {
                 if (tempFile.orientation === "horizontal") {
                     pdfOptions.landscape = true;
                     page.addStyleTag({ 'content': '@page { size: A4 landscape; }' });
+                    logger.writeLog({ text: `Setting PDF orientation to ${tempFile.orientation}`, type: "LOG" });
                 }
                 // Don't save the pdf 
                 if (tempFile.preview === true) {
                     delete pdfOptions.path;
+                    logger.writeLog({ text: `Deleting pdf path for preview pdf request`, type: "LOG" });
                 }
                 
                 ({ buffer: templateBuffer, totalPages } = await resolvePdfTotalPage({ 
-                    pagePdfGenFn: page.pdf.bind(page), 
-                    pdfOptions, 
-                    pageEvalFn: page.$eval.bind(page),
+                    page,
+                    pdfOptions,
                     pdfMergeDelegator,
                     templateHelper
                 }));
@@ -173,7 +162,8 @@ function processTemplate({ data, options, pdfMergeDelegator, templateHelper }) {
                         tempFile,
                         templateHelper,
                         totalPages,
-                        options
+                        options, 
+                        page
                     });
                 }
             } else {
@@ -200,14 +190,14 @@ function processTemplate({ data, options, pdfMergeDelegator, templateHelper }) {
  * @param {*} params
  * @returns Promise<Array<string | Buffer>>
  */
-async function generatePdfWithCustomHeaderAndFooter({ tempFile, pdfOptions, pdfMergeDelegator, templateHelper, logger, totalPages, options }) {
+async function generatePdfWithCustomHeaderAndFooter({ tempFile, pdfOptions, pdfMergeDelegator, templateHelper, logger, totalPages, options, page }) {
     const pdfChunks = [];
     for (const pageIndex in tempFile.customPagesHeaderFooter) {
         const pageHeaderFooterId = tempFile.customPagesHeaderFooter[pageIndex];
         const _pdfOptions = { ...pdfOptions };
 
-        const _headerHTML = await __getHeaderTemplateFromTemplate(page.$eval.bind(page), options, `#header-page-${pageHeaderFooterId}`);
-        const _footerHTML = await __getFooterTemplateFromTemplate(page.$eval.bind(page), options, `#footer-page-${pageHeaderFooterId}`);
+        const _headerHTML = await __getHeaderTemplateFromTemplate(page, options, `#header-page-${pageHeaderFooterId}`);
+        const _footerHTML = await __getFooterTemplateFromTemplate(page, options, `#footer-page-${pageHeaderFooterId}`);
 
         _pdfOptions.footerTemplate = _footerHTML.footerTemplate;
         _pdfOptions.headerTemplate = _headerHTML.headerTemplate;
@@ -216,9 +206,8 @@ async function generatePdfWithCustomHeaderAndFooter({ tempFile, pdfOptions, pdfM
         _pdfOptions.margin.bottom = _footerHTML.marginBottom;
         
         _pdfOptions.pageRanges  = pageHeaderFooterId.replace(/last|penult|first/g, (x) => {
-            return x === 'penult'? totalPages - 1: 
-                x === 'last'? totalPages: 
-                x === 'first'? 1: x
+            return x === 'first'  ? 1 : 
+                   x === 'penult' ? totalPages - 1 : totalPages;
         });
         
         try {
@@ -227,6 +216,7 @@ async function generatePdfWithCustomHeaderAndFooter({ tempFile, pdfOptions, pdfM
             logger.writeLog({ text: error.stack, type: "ERROR" });
         }
     }
+
     let templateBuffer = pdfChunks;
     let templateType = "array/pdf";
     pdfOptions.path && templateHelper.deleteFile(pdfOptions.path);
@@ -249,24 +239,24 @@ async function generatePdfWithCustomHeaderAndFooter({ tempFile, pdfOptions, pdfM
  * 
  * @returns Promise<Buffer>
  */
-function resolvePdfTotalPage({ pagePdfGenFn, pdfOptions, pageEvalFn, pdfMergeDelegator, templateHelper }) {
-    return pagePdfGenFn/*page.pdf*/(pdfOptions)
+function resolvePdfTotalPage({ page, pdfOptions, pdfMergeDelegator, templateHelper }) {
+    return page.pdf(pdfOptions)
     .then(async (buffer) => {
         if (pdfMergeDelegator) {
             pdfOptions.path && templateHelper.deleteFile(pdfOptions.path); // Delete the previous pdf
             const totalPages = await pdfMergeDelegator.getPdfTotalPages(buffer);
             
-            return await pageEvalFn("body", (body, totalPages) => {
+            return await page.$eval("body", (body, totalPages) => {
                 const script = document.createElement("script");
                 const text = document.createTextNode(`
                     reactiveInstance.extraParams['totalPages'] = ${totalPages};
                 `);
-                
+
                 script.appendChild(text);
                 body.appendChild(script);
             }, totalPages)
             .then(async () => {
-                return { buffer: await pagePdfGenFn/*page.pdf*/(pdfOptions), totalPages };
+                return { buffer: await page.pdf(pdfOptions), totalPages };
             });
         }
 
@@ -278,9 +268,9 @@ function resolvePdfTotalPage({ pagePdfGenFn, pdfOptions, pageEvalFn, pdfMergeDel
  * Read the template to footer from the HTML template
  * @param {*} page 
  */
-async function __getFooterTemplateFromTemplate(pageEvalFn, options, pageFooterId = "#page-footer") {
+async function __getFooterTemplateFromTemplate(page, options, pageFooterId = "#page-footer") {
     try {
-        return await pageEvalFn/*page.$eval*/(pageFooterId, (ele, _options) => {
+        return await page.$eval(pageFooterId, (ele, _options) => {
             const outerHTML = ele.outerHTML;
             ele.style.display = "none";
 
@@ -309,9 +299,9 @@ async function __getFooterTemplateFromTemplate(pageEvalFn, options, pageFooterId
  * Read the template to header from the HTML template
  * @param {*} page 
  */
-async function __getHeaderTemplateFromTemplate(pageEvalFn, options, pageHeaderId = "#page-header") {
+async function __getHeaderTemplateFromTemplate(page, options, pageHeaderId = "#page-header") {
     try {
-        return await pageEvalFn/*page.$eval*/(pageHeaderId, (ele, _options) => {
+        return await page.$eval(pageHeaderId, (ele, _options) => {
             const outerHTML = ele.outerHTML;
             ele.style.display = "none";
 
@@ -329,11 +319,13 @@ async function __getHeaderTemplateFromTemplate(pageEvalFn, options, pageHeaderId
     return ({ headerTemplate: `<span></span>`, marginTop: options.printingMarginTop });
 }
 
+let browser;
 module.exports.initialize = function (options) {
     if (!options) {
         throw new Error("The Initializer options cannot be null");
     }
 
+    let page;
     const {
         BROWSER_NAME            = "chrome",
         URL_BROWSER,
@@ -346,7 +338,7 @@ module.exports.initialize = function (options) {
         printingMarginLeft      = "2.54cm",
         printingMarginRight     = "2.54cm",
         libs,
-        templateServerUrl       = "http:localhost",
+        templateServerUrl       = "http://localhost",
         height, width,
         paperFormat
     } = options;
@@ -363,7 +355,7 @@ module.exports.initialize = function (options) {
         printingMarginLeft,
         printingMarginRight,
         libs,
-        templateServerUrl:          `${templateServerUrl}${(PORT && (':' + PORT)) || ''}`,
+        templateServerUrl       : `${templateServerUrl}${(PORT && (':' + PORT)) || ''}`,
         height, width,
         paperFormat
     };
@@ -371,10 +363,14 @@ module.exports.initialize = function (options) {
     const templateHelper = templateInitializer.initialize(_options);
 
     return {
-        processTemplate: (data) => processTemplate({ data, pdfMergeDelegator: options.pdfMergeDelegator, options: _options, templateHelper }),
-        dispose: async () => {
-            await closeBrowser({ templateHelper, browser, page });
+        processTemplate: async (data) => {
+            [browser, page] = await init(_options, browser);
+            return generatePdfFromTemplate({ page, data, pdfMergeDelegator: options.pdfMergeDelegator, options: _options, templateHelper })
         },
-        getTemplateParameters: templateHelper.getTemplateParameters
+        dispose: async () => {
+            await closeBrowser({ templateHelper, browser });
+            browser = null;
+        },
+        getTemplateParameters: async (templateName) => templateHelper.getTemplateParameters(templateName)
     };
 };

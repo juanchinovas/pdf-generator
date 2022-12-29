@@ -1,4 +1,4 @@
-registerComponent('footer-component', {
+Vue.component('footer-component', {
     props: ["title"],
     created: function(){
         console.log("On component footer");

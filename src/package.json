@@ -9,9 +9,7 @@
     "config": "npm run build2npm && npm run start",
     "pack": "npm test && cd ../compiled/ && npm i && npm run run-pack",
     "publish": "npm run pack && cd ../compiled/ && npm run run-publish",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
-    "test-nyc": "nyc --reporter=text mocha --timeout 3000 --exit",
+    "test": "jest --no-cache",
     "config-dev": "npm i && npm run config"
   },
   "keywords": [

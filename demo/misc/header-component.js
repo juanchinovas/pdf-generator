@@ -1,4 +1,4 @@
-registerComponent('header-component', {
+Vue.component('header-component', {
     props: ["title"],
     created: function(){
         console.log("On component header");

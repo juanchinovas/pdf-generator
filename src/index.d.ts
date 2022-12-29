@@ -19,7 +19,7 @@ export interface Options {
     width?: string | number;
     paperFormat?: 'Letter' | 'Legal' | 'Tabloid' | 'Ledger' | 'A0' | 'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6';
 }
-export interface ParamData {
+export interface TemplateData {
     $templateName: string,
     $parameters: any,
     $extraParams?: ExtraParamData
@@ -45,11 +45,11 @@ export interface PDFGeneratorResult {
 export interface PDFGenerator {
     /**
      * Process the VueJs template to generate PDF
-     * @param ParamData
+     * @param TemplateData
      * 
      * @returns Promise<PDFGeneratorResult>
      */
-    processTemplate: (data: ParamData) => Promise<PDFGeneratorResult>;
+    processTemplate: (data: TemplateData) => Promise<PDFGeneratorResult>;
     /**
      * Dispose the puppeteer instance
      */

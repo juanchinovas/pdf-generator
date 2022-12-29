@@ -21,7 +21,7 @@ See postman [collection](../demo/pdf-generator-test.postman_collection.json) for
   - [Generate HTML in memory](#generate-html-in-memory)
   - [Different headers/footers](#different-headersfooters)
   - [Components](#components)
-  - [PDF Merger Delegator](#pdf-merger-delegator)
+  - [PDF Merge Delegator](#pdf-merge-delegator)
 - [Documentation](#documentation)
   - [Interfaces](#interfaces)
   - [API](#api)
@@ -53,13 +53,13 @@ let pdfGenerator = pdfProcessor.pdfGeneratorInstance({
     PORT,
     TEMPLATE_DIR,
     libs: [/*VueJs mixin files*/],
-    pdfMergerDelegator
+    pdfMergeDelegator
 });
 ```
 > Use `process.env` if you passed the environment variables using node command. I recommend use a `.env` file and the package [dotenv](https://www.npmjs.com/package/dotenv).
 
 > `libs` property in the `Options` object pass to `pdfGeneratorInstance` function is optional, is a list of VueJs mixin modules o components to be injected into the template. Can be pass it a VueJs library url by default is use this https://cdn.jsdelivr.net/npm/vue
-> See `pdfMergerDelegator` info in [PDF Merger Delegator](#pdf-merger-delegator).
+> See `pdfMergeDelegator` info in [PDF Merge Delegator](#pdf-merge-delegator).
 
 ## Generate PDF in memory
 ```typescript
@@ -150,7 +150,7 @@ To use different headers and footers in the PDF pages generated. Have to pass th
     </v-style>
 </div>
 ```
-**As `VueJs` remove the css style tag by default, the element `v-style` is include in the library. `v-style` let you include the css to the header/footer**.
+**As `VueJs` remove the css style tag by default, the component `v-style` is include in the library. `v-style` let you include the css to the header/footer**.
 
 ## Components
 VueJs component are valid.
@@ -162,7 +162,7 @@ Vue.component('test-component', {
 ```
 All the components must to be in separated file and reference it on the `libs` property.
 
-## PDF Merger Delegator
+## PDF Merge Delegator
 The PDF delegator is a helper that satisfy the interface
 ```typescript
 {
@@ -175,7 +175,7 @@ The PDF delegator is a helper that satisfy the interface
 
 The delegator is implemented using a library that can manipulate pdf. Like [pdf-lib](https://www.npmjs.com/package/pdf-lib) or other.
 
-> See [pdf delegator of the demo](./demo/pdfMergerDelegator.js).
+> See [pdf delegator of the demo](./demo/pdfMergeDelegator.js).
 
 `Why a delegator?` due to the limitation of using Puppeteer to generate pdf with different header or footer as an only file is necessary a third library to merge the pdf generated with different headers and footers. Too right now is not possible to get the total pages of the document with Puppeteer.
 
@@ -198,12 +198,16 @@ interface Options {
     printingMarginLeft?: string | number; // default 2.54cm
     printingMarginRight?: string | number; // default 2.54cm
     libs: Array<string> // List of js files used on the templates
-    pdfMergerDelegator?: PdfMergerDelegator; // Object to merge the different pdf create with distinct header/footer and get the total page.
+    pdfMergeDelegator?: PdfMergeDelegator; // Object to merge the different pdf create with distinct header/footer and get the total page.
+    templateServerUrl?: string; // server url where the templates are hosted. Default http://localhost
+    height?: string | number;
+    width?: string | number;
+    paperFormat?: 'Letter' | 'Legal' | 'Tabloid' | 'Ledger' | 'A0' | 'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6';
 }
 ```
 
 ```typescript
-interface PdfMergerDelegator {
+interface PdfMergeDelegator {
     getPdfTotalPages: (pdfBuffer: Buffer) => Promise<number>;
     merge: (pdfList: Array<Buffer>) => Promise<Buffer>;
 }
@@ -216,6 +220,7 @@ interface TemplateData {
 
 interface PDFGeneratorResult {
     fileName: string;
+    totalPages: number;
     buffer: Buffer | Array<Buffer>;
     templateType: 'application/pdf' | 'text/html' | 'array/pdf';
 }
@@ -223,15 +228,23 @@ interface PDFGeneratorResult {
 interface PdfGenerator {
     /**
      * Process the VueJs template to generate PDF
-     * @param ParamData
+     * @param TemplateData
      * 
      * @returns Promise<PDFGeneratorResult>
      */
-    processTemplate: (data: ParamData) => Promise<PDFGeneratorResult>;
+    processTemplate: (data: TemplateData) => Promise<PDFGeneratorResult>;
     /**
      * Dispose the puppeteer instance
      */
     dispose: () => Promise<void>;
+    /**
+     * Real all the params found in a HTML template 
+     * with the Vue.js template syntax.
+     *
+     * @param string templateName
+     * @returns Promise<{[key: string]: any}>
+     */
+    function getTemplateParameters(templateName: string): Promise<{[key: string]: any}>;
 }
 ```
 ## API
@@ -243,13 +256,4 @@ interface PdfGenerator {
  * @returns PdfGenerator
  */
 function pdfGeneratorInstance(options: Options) => PdfGenerator; 
-
-/**
- * Real all the params found in a HTML template 
- * with the Vue.js template syntax.
- *
- * @param string templateName
- * @returns Promise<{[key: string]: any}>
- */
-function getTemplateParameters(templateName: string): Promise<{[key: string]: any}>;
 ```
