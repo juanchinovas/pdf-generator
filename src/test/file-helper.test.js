@@ -1,121 +1,123 @@
-const fs = require("fs");
-const logger = require("../logger");
-const fileHelper = require("../file-helper");
-
-jest.mock("fs", () => ({
-    readFile: jest.fn(),
-    writeFile: jest.fn(),
-    readFileSync: jest.fn(),
-    mkdir: jest.fn(),
-    existsSync: jest.fn(() => true),
-    unlink: jest.fn(),
-}));
+const FileHelper = require("../file-helper");
 
 describe("file-helper", () => {
-    beforeEach(() => {
-        logger.writeLog = jest.fn();
-    });
+	let fs;
+	let logger;
+	let fileHelper;
 
-    describe("readFile", () => {
-        let err = null;
-        beforeEach(() => {
-            fs.readFile.mockImplementation((_, cb) => cb(err, "data"));
-        });
+	beforeEach(() => {
+		logger = { writeLog: jest.fn() };
+		fs = {
+			readFile: jest.fn(),
+			writeFile: jest.fn(),
+			readFileSync: jest.fn(),
+			mkdir: jest.fn(),
+			existsSync: jest.fn(() => true),
+			unlink: jest.fn(),
+		};
+		fileHelper = new FileHelper(logger, fs);
+	});
 
-        it("should return file content", async () => {
-            await expect(fileHelper.readFile("/path")).resolves.toEqual("data");
-        });
+	describe("readFile", () => {
+		let err = null;
+		beforeEach(() => {
+			fs.readFile.mockImplementation((_, cb) => cb(err, "data"));
+		});
 
-        it("fails read file if does not exist", async () => {
-            err = "oops";
+		it("should return file content", async () => {
+			await expect(fileHelper.readFile("/path")).resolves.toEqual("data");
+		});
 
-            await expect(fileHelper.readFile("/no-exist")).rejects.toEqual(err);
-            expect(logger.writeLog).toHaveBeenCalledWith({ text: err, type: "ERROR" });
-        });
-    });
+		it("fails read file if does not exist", async () => {
+			err = "oops";
 
-    describe("readFileAsync", () => {
-        it("should return file content async", async () => {
-            fs.readFileSync.mockImplementation(() => "data");
+			await expect(fileHelper.readFile("/no-exist")).rejects.toEqual(err);
+			expect(logger.writeLog).toHaveBeenCalledWith({ text: err, type: "ERROR" });
+		});
+	});
 
-            expect(fileHelper.readFileAsync("/path")).toEqual("data");
-        })
-    });
+	describe("readFileAsync", () => {
+		it("should return file content async", async () => {
+			fs.readFileSync.mockImplementation(() => "data");
 
-    describe("saveFile", () => {
-        let err = null;
-        beforeEach(() => {
-            fs.writeFile.mockImplementation((_, _1, cb) => cb(err));
-        });
+			expect(fileHelper.readFileAsync("/path")).toEqual("data");
+		});
+	});
 
-        it("should return file content", async () => {
-            await expect(fileHelper.saveFile("/path", "data")).resolves.toBe(true);
-        });
+	describe("saveFile", () => {
+		let err = null;
+		beforeEach(() => {
+			fs.writeFile.mockImplementation((_, _1, cb) => cb(err));
+		});
 
-        it("fails read file if does not exist", async () => {
-            err = "oops";
+		it("should return file content", async () => {
+			await expect(fileHelper.saveFile("/path", "data")).resolves.toBe(true);
+		});
 
-            await expect(fileHelper.saveFile("/no-exist", "data")).rejects.toEqual(err);
-            expect(logger.writeLog).toHaveBeenCalledWith({ text: err, type: "ERROR" });
-        });
-    });
+		it("fails read file if does not exist", async () => {
+			err = "oops";
 
-    describe("ensureExitsDir", () => {
-        let err = null;
-        beforeEach(() => {
-            fs.mkdir.mockImplementation((_, _1, cb) => cb(err));
-        });
+			await expect(fileHelper.saveFile("/no-exist", "data")).rejects.toEqual(err);
+			expect(logger.writeLog).toHaveBeenCalledWith({ text: err, type: "ERROR" });
+		});
+	});
 
-        it("fails if the param is not an array", async () => {
-            await expect(fileHelper.ensureExitsDir("/path")).rejects.toEqual("No array of dirs provided");
-            expect(logger.writeLog).toHaveBeenCalledWith({
-                text: "No array of dirs provided",
-                type: "ERROR"
-            });
-        });
+	describe("ensureExitsDir", () => {
+		let err = null;
+		beforeEach(() => {
+			fs.mkdir.mockImplementation((_, _1, cb) => cb(err));
+		});
 
-        it("creates one dir", async () => {
-            await expect(fileHelper.ensureExitsDir(["/path"])).resolves.toEqual([true]);
-        });
+		it("fails if the param is not an array", async () => {
+			await expect(fileHelper.ensureExitsDir("/path")).rejects.toEqual("No array of dirs provided");
+			expect(logger.writeLog).toHaveBeenCalledWith({
+				text: "No array of dirs provided",
+				type: "ERROR"
+			});
+		});
 
-        it("creates 2 dirs", async () => {
-            await expect(fileHelper.ensureExitsDir(["/path", "/path2"])).resolves.toEqual([true, true]);
-        });
+		it("creates one dir", async () => {
+			await expect(fileHelper.ensureExitsDir(["/path"])).resolves.toEqual([true]);
+		});
 
-        it("fails when can not create the dir", async () => {
-            err = "oops";
+		it("creates 2 dirs", async () => {
+			await expect(fileHelper.ensureExitsDir(["/path", "/path2"])).resolves.toEqual([true, true]);
+		});
 
-            await expect(fileHelper.ensureExitsDir(["/path"])).rejects.toEqual(err);
-        });
-    });
+		it("fails when can not create the dir", async () => {
+			err = "oops";
 
-    describe("deleteFile", () => {
-        let err = null;
-        beforeEach(() => {
-            fs.unlink.mockImplementation((_, cb) => cb(err));
-        });
+			await expect(fileHelper.ensureExitsDir(["/path"])).rejects.toEqual(err);
+		});
+	});
 
-        it("deletes the file", () => {
-            fs.existsSync.mockImplementationOnce(() => true);
+	describe("deleteFile", () => {
+		let err = null;
+		beforeEach(() => {
+			fs.unlink.mockImplementation((_, cb) => cb(err));
+		});
 
-            fileHelper.deleteFile("/path/file.log");
+		it("deletes the file", () => {
+			fs.existsSync.mockImplementationOnce(() => true);
 
-            expect(logger.writeLog).toHaveBeenCalledWith({ text: `Delete file /path/file.log`, type: "LOG" });
-            expect(fs.unlink).toHaveBeenCalled();
-        });
+			fileHelper.deleteFile("/path/file.log");
 
-        it("should not delete the file if not exists", () => {
-            fs.existsSync.mockImplementationOnce(() => false);
+			expect(logger.writeLog).toHaveBeenCalledWith({ text: "Delete file /path/file.log", type: "LOG" });
+			expect(fs.unlink).toHaveBeenCalled();
+		});
 
-            fileHelper.deleteFile("/path/file2.log");
+		it("should not delete the file if not exists", () => {
+			fs.existsSync.mockImplementationOnce(() => false);
 
-            expect(logger.writeLog).not.toHaveBeenCalledWith({ text: `Delete file /path/file.log2`, type: "LOG" });
-        });
+			fileHelper.deleteFile("/path/file2.log");
 
-        it("should fail when delete the file", async () => {
-            err = "oops";
+			expect(logger.writeLog).not.toHaveBeenCalledWith({ text: "Delete file /path/file.log2", type: "LOG" });
+		});
 
-            expect(() => fileHelper.deleteFile("/path/file2.log")).toThrow(err);
-        });
-    });
+		it("should fail when delete the file", async () => {
+			err = "oops";
+
+			expect(() => fileHelper.deleteFile("/path/file2.log")).toThrow(err);
+		});
+	});
 });

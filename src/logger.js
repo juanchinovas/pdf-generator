@@ -1,14 +1,21 @@
-const fs = require("fs");
+class Logger {
+	#fs;
+	#currentDate;
 
+	constructor(fs) {
+		this.#fs = fs;
+		this.#currentDate = new Date();
+	}
 
-
-module.exports.writeLog = function({text, type}) {
-    if (!fs.existsSync("./logs")) {
-        fs.mkdirSync("./logs", parseInt("0744", 8));
-    }
-    const currentDate = new Date();
-    const fileName = `${currentDate.getFullYear()}-${(currentDate.getMonth()+1).toString().padStart(2, "00")}-${currentDate.getDate().toString().padStart(2, "00")}.log`
-    const fd = fs.openSync(`./logs/${fileName}`, 'a');
-    fs.writeSync(fd, `[${currentDate}]   ${type}   '${text}'\n`);
-    fs.closeSync(fd);
+	writeLog({text, type}) {
+		if (!this.#fs.existsSync("./logs")) {
+			this.#fs.mkdirSync("./logs", parseInt("0744", 8));
+		}
+		const fileName = `${this.#currentDate.getFullYear()}-${(this.#currentDate.getMonth()+1).toString().padStart(2, "00")}-${this.#currentDate.getDate().toString().padStart(2, "00")}`;
+		const fd = this.#fs.openSync(`./logs/${fileName}.log`, "a");
+		this.#fs.writeSync(fd, `[${this.#currentDate}]   ${type}   '${text}'\n`);
+		this.#fs.closeSync(fd);
+	}
 }
+
+module.exports = Logger;
