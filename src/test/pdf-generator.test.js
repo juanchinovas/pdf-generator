@@ -35,6 +35,7 @@ describe("pdf-generator", () => {
 			}, ops));
 		}),
 		addStyleTag: jest.fn(),
+		close: jest.fn(() => Promise.resolve())
 	};
 
 

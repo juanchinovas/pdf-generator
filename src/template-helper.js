@@ -1,9 +1,11 @@
 class TemplateHelper {
 	#fileHelper;
 	#options;
+	#templateParameterReader;
 
-	constructor(options, fileHelper) {
+	constructor(options, fileHelper, templateParameterReader) {
 		this.#fileHelper = fileHelper;
+		this.#templateParameterReader = templateParameterReader;
 		this.#options = this.#initialize(options);
 	}
 
@@ -39,7 +41,7 @@ class TemplateHelper {
 			$templateName: templateName,
 			noData: true
 		}, this.#options);
-		return this.#getTemplateParameters(template);
+		return this.#templateParameterReader.getParametersFrom(template);
 	}
 
 	/**
@@ -78,7 +80,7 @@ class TemplateHelper {
 					let orientation, previewHTML, preview, customPagesHeaderFooter;
 
 					if (!("noData" in data)) {
-						var param = this.#getTemplateParameters(template);
+						var param = this.#templateParameterReader.getParametersFrom(template);
 						let templateParts = template.split(/<\/body>\n*(<\/html>)*/gm);
 						const extraParams = data.$extraParams || {};
 
@@ -139,69 +141,6 @@ class TemplateHelper {
 		return ({
 			fileName
 		});
-	}
-
-	/**
-	 * Read parameter from HTML template
-	 * @param {*} template
-	 */
-	#getTemplateParameters(template) {
-		let matched = "";
-		const regex = /((?:\{\{)\s*([\d\w$]+)\s*(?:\}\}))|(?:v-for=.+(in|of)\s)([.\d\w$]+)|(?:\{\{)\s*[\d\w$.]+\(([\d\w$]+),*[\w\s\d"'-]*\)(?:\}\})|(?:\{\{)([\d$\w]+)\.([\d$\w]+)(?:\}\})/mgi;
-		const objResult = {};
-		let key = "";
-		let matches = null;
-
-		while ((matched = regex.exec(template))) {
-			if (matched) {
-				matches = matched.slice(0).filter(f => f);
-				if (matches[0].match("v-for")) {
-					key = matches[matches.length - 1];
-					if (objResult[key] && Array.isArray(objResult[key])) {
-						objResult[key] = [Object.assign(objResult[key][0], this.#getObjectParams(matches, template))];
-						continue;
-					}
-					objResult[key] = [this.#getObjectParams(matches, template)];
-				} else if (matches[0].match(/(?:\{\{)([\d$\w]+)\.([\d$\w]+)(?:\}\})/)) {
-					objResult[matches[1]] = this.#getObjectParams(matches[1], template);
-				} else if (isNaN(matches[matches.length - 1])) {
-					key = matches.pop();
-					objResult[key] = `{{${key}}}`;
-				}
-			}
-		}
-
-		return objResult;
-	}
-
-	/**
-	 * Read parameters from HTML template of objects and array.
-	 * @param {*} matches
-	 * @param {*} template
-	 */
-	#getObjectParams(matches, template) {
-		const arrayName = new RegExp(
-			`"\\(*([\\d\\w$]+),*.*\\)*\\s(?:in|of)\\s${matches[matches.length - 1]}`,
-			"igm"
-		).exec(matches[0]) || [null, matches];
-		const regex = new RegExp(`${arrayName[1]}\\.([\\d\\w$]+)`, "igm");
-		const obj = {};
-		let matched;
-
-		while ((matched = regex.exec(template))) {
-			if (matched) {
-				let param = matched.slice(0).pop();
-				if (param) {
-					param = param
-						.replace(/[{(}),]/g, "")
-						.split(/\s+/)
-						.shift();
-				}
-				obj[param] = `{{${param}}}`;
-			}
-		}
-
-		return obj;
 	}
 
 	#initialize(options) {

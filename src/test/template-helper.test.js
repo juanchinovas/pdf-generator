@@ -4,6 +4,7 @@ describe("template-helper", () => {
 	let helperInstance;
 	let _options;
 	let fileHelper;
+	let templateParameterReader;
 
 	beforeEach(() => {
 		_options = {
@@ -18,8 +19,11 @@ describe("template-helper", () => {
 			ensureExitsDir: jest.fn(() => Promise.resolve(true)),
 			deleteFile: jest.fn(() => Promise.resolve(true))
 		};
+		templateParameterReader = {
+			getParametersFrom: jest.fn(() => ({ param: "{{param}}" }))
+		};
 
-		helperInstance = new TemplateHelper(_options, fileHelper);
+		helperInstance = new TemplateHelper(_options, fileHelper, templateParameterReader);
 	});
 
 	describe("prepareTemplate", () => {
@@ -151,9 +155,9 @@ describe("template-helper", () => {
 		});
 
 		it("should not add vue lib if it's aready set", async () => {
-			fileHelper.readFile.mockImplementation(() => Promise.resolve(""));
+			templateParameterReader.getParametersFrom.mockImplementation(() => ({}));
 			_options.libs = ["https://framework/vue@2"];
-			helperInstance = new TemplateHelper(_options, fileHelper);
+			helperInstance = new TemplateHelper(_options, fileHelper, templateParameterReader);
 
 			await expect(helperInstance.prepareTemplate({
 				$templateName: "test"
@@ -180,53 +184,7 @@ describe("template-helper", () => {
 			await expect(helperInstance.getTemplateParameters("test")).resolves.toEqual({
 				param: "{{param}}",
 			});
-		});
-
-		it("returns array template parameters", async () => {
-			fileHelper.readFile.mockImplementation(() => {
-				return Promise.resolve("<p v-for=\"item in list\">{{item}}<p>");
-			});
-
-			await expect(helperInstance.getTemplateParameters("test")).resolves.toEqual({
-				list: [{}],
-				item: "{{item}}"
-			});
-		});
-
-		it("returns object template parameters", async () => {
-			fileHelper.readFile.mockImplementation(() => {
-				return Promise.resolve("<p>{{list.item}}<p>");
-			});
-
-			await expect(helperInstance.getTemplateParameters("test")).resolves.toEqual({
-				list: {
-					item: "{{item}}"
-				}
-			});
-		});
-
-		it("returns complete template parameters ", async () => {
-			fileHelper.readFile.mockImplementation(() => {
-				return Promise.resolve(`
-                <p>{{list.item}}<p>
-                <p v-for="name of names">{{name}}<p>
-                <p v-for="animal in animals">
-                    {{animal}}
-                <p>
-                <p>{{date}}<p>
-                `);
-			});
-
-			await expect(helperInstance.getTemplateParameters("test")).resolves.toEqual({
-				list: {
-					item: "{{item}}"
-				},
-				date: "{{date}}",
-				names: [{}],
-				name: "{{name}}",
-				animals: [{}],
-				animal: "{{animal}}",
-			});
+			expect(templateParameterReader.getParametersFrom).toHaveBeenCalledWith("<p>{{param}}<p>");
 		});
 	});
 
