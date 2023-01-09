@@ -9,10 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@sunacchi/pdf-generator": "file:../compiled/npm",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "express": "^4.17.1",
-    "html-pdf-generator": "file:../compiled/npm",
     "pdf-lib": "^1.14.0"
   },
   "devDependencies": {

@@ -10,12 +10,12 @@ class TemplateHelper {
 	}
 
 	async prepareTemplate(data) {
-		await this.#fileHelper.ensureExitsDir([this.#options.FILE_DIR, this.#options.PDF_DIR]);
+		await this.#fileHelper.ensureExitsDir([this.#options.fileDir, this.#options.pdfDir]);
 		const processedData = await this.#readTemplateContent(data, this.#options);
 		const fileInfo = await this.#saveOnTemp(
 			processedData.templateName,
 			processedData.template,
-			this.#options.FILE_DIR
+			this.#options.fileDir
 		);
 
 		return ({
@@ -74,7 +74,7 @@ class TemplateHelper {
 			}
 
 			this.#fileHelper
-				.readFile(`${options.TEMPLATE_DIR}/${data.$templateName}.html`)
+				.readFile(`${options.templateDir}/${data.$templateName}.html`)
 				.then(templateData => templateData.toString("utf8"))
 				.then(async (template) => {
 					let orientation, previewHTML, preview, customPagesHeaderFooter;
@@ -143,12 +143,12 @@ class TemplateHelper {
 		});
 	}
 
-	#initialize(options) {
+	#initialize({fileDir, pdfDir, templateDir, libs = []}) {
 		let _options = {
-			FILE_DIR: options.FILE_DIR,
-			PDF_DIR: options.PDF_DIR,
-			TEMPLATE_DIR: options.TEMPLATE_DIR,
-			libs: (options.libs || [])
+			fileDir,
+			pdfDir,
+			templateDir,
+			libs
 		};
 		let vueLib = _options.libs && Array.isArray(_options.libs) && _options.libs.find(s => /vue(\.min\.+?js?)*/.test(s));
 		if (!vueLib) {

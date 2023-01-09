@@ -23,7 +23,7 @@ gulp.task("npm-install", shell.task(`cd ${destDir} && npm i --production`));
 gulp.task("npm-pack", shell.task(`cd ${destDir} && npm pack`));
 gulp.task("npm-publish", shell.task(`cd ${destDir} && npm publish`));
 // install plugin
-gulp.task("npm-un-plugin", shell.task(`cd ../demo && npm un html-pdf-generator`));
+gulp.task("npm-un-plugin", shell.task(`cd ../demo && npm un @sunacchi/pdf-generator`));
 gulp.task("npm-in-plugin", shell.task(`cd ../demo && npm i file:../compiled/npm`));
 
 gulp.task("compile", function () {

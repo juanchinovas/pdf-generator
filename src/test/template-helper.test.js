@@ -8,9 +8,9 @@ describe("template-helper", () => {
 
 	beforeEach(() => {
 		_options = {
-			FILE_DIR: "/FILE_DIR",
-			PDF_DIR: "/PDF_DIR",
-			TEMPLATE_DIR: "/TEMPLATE_DIR"
+			fileDir: "/fileDir",
+			pdfDir: "/pdfDir",
+			templateDir: "/templateDir"
 		};
 		fileHelper = {
 			readFile: jest.fn(() => Promise.resolve("")),
@@ -38,7 +38,7 @@ describe("template-helper", () => {
 
 		test.each(falsyCases)("when data is %o throws %s", async (param, expected) => {
 			await expect(helperInstance.prepareTemplate(param)).rejects.toThrow(expected);
-			expect(fileHelper.ensureExitsDir).toHaveBeenCalledWith([_options.FILE_DIR, _options.PDF_DIR]);
+			expect(fileHelper.ensureExitsDir).toHaveBeenCalledWith([_options.fileDir, _options.pdfDir]);
 		});
 
 		it("returns template name 'custom_template' when data is a string", async () => {
@@ -87,7 +87,7 @@ describe("template-helper", () => {
 					param: "testing template parameter reading"
 				}
 			});
-			expect(fileHelper.readFile).toHaveBeenCalledWith("/TEMPLATE_DIR/test.html");
+			expect(fileHelper.readFile).toHaveBeenCalledWith("/templateDir/test.html");
 		});
 
 		it("returns template content and data", async () => {

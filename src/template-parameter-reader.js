@@ -6,30 +6,37 @@ class TemplateParameterReader {
 	 * @param {*} template
 	 */
 	getParametersFrom(template) {
-		let matched = "";
-		const regex = /((?:\{\{)\s*([\d\w$]+)\s*(?:\}\}))|(?:v-for="([\d\w]+)\s(in|of)\s)([.\d\w$]+)|(?:\{\{)\s*[\d\w$.]+\(([\d\w$]+),*[\w\s\d"'-]*\)(?:\}\})|(?:\{\{)([\d$\w]+)\.([\d$\w]+)(?:\}\})/mgi;
+		const regex = /((?:\{\{)\s*([\d\w$.]+)\s*(?:\}\}))|(?:v-for="([\d\w]+)\s(in|of)\s)([.\d\w$]+)|(?:\{\{)\s*[\d\w$.]+\(([\d\w$]+),*[\w\s\d"'-]*\)(?:\}\})|(?:text|html|show|if|else-if|bind|:|model)="([\d$\w.]+)"|(?:show|if|else-if)="([\d$\w.]+)+"|(?:show|if|else-if)=.+\s([a-zA-Z]+)\s*"|(?:show|if|else-if)="(\s*[a-zA-Z]*\(*([\d\$\w.]+)\)|([\d\$\w.]+))/mgi;
 		const objResult = {};
-		let key = "";
-		let matches = null;
 		const unWantedkeys = new Map();
+		let key = "", matches = null, matched = "";
 
 		while ((matched = regex.exec(template))) {
 			if (matched) {
 				matches = matched.slice(0).filter(f => f);
+				key = matches[matches.length - 1];
+				let [parent, child, ...rest] = key.split(".");
 				if (matches[0].match("v-for")) {
-					key = matches[matches.length - 1];
 					objResult[key] = [this.#getObjectParams(matches, template)];
 					unWantedkeys.set(matches[1], key);
-				} else if (matches[0].match(/(?:\{\{)([\d$\w]+)\.([\d$\w]+)(?:\}\})/)) {
-					objResult[matches[1]] = this.#getObjectParams(matches[1], template);
-				} else if (isNaN(matches[matches.length - 1])) {
-					key = matches.pop();
-					objResult[key] = `{{${key}}}`;
+				} else if (parent && child) {
+					objResult[parent] = objResult[parent] ?? {};
+					if (rest && rest.length) {
+						objResult[parent][child] = rest.reduce(([obj, old], item) => {
+							if (!obj[item]) {
+								obj[item] = {};
+							}
+							return [ obj[item], old ?? obj ];
+						}, [{}]).pop();
+						continue;
+					}
+					objResult[parent][child] = `{{${child}}}`;
+				} else if (!child && isNaN(parent)) {
+					objResult[parent] = `{{${parent}}}`;
 				}
 			}
 		}
 		unWantedkeys.forEach((_, key) => delete objResult[key]);
-
 		return objResult;
 	}
 
@@ -42,7 +49,7 @@ class TemplateParameterReader {
 		const arrayName = new RegExp(
 			`"\\(*([\\d\\w$]+),*.*\\)*\\s(?:in|of)\\s${matches[matches.length - 1]}`,
 			"igm"
-		).exec(matches[0]) || [null, matches];
+		).exec(matches[0]);
 		const regex = new RegExp(`${arrayName[1]}\\.([\\d\\w$]+)`, "igm");
 		const obj = {};
 		let matched;

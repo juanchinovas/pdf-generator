@@ -1,0 +1,85 @@
+{
+	"templateName": "Template7",
+	"parameters": {
+		"ultimatum": "Verify conviniance",
+		"listName": "Koubas",
+		"names": [
+			"Lolo",
+			"Lola",
+			"Lalo",
+			"Lelo",
+			"Hero"
+		],
+		"animals": [
+			{
+				"name": "Doggy",
+				"type": "Dog"
+			},
+			{
+				"name": "Caty",
+				"type": "Cow"
+			},
+			{
+				"name": "Maggi",
+				"type": "Dog"
+			}
+		],
+		"info": {
+			"worldType": "Planet Mars",
+			"turned": "Unlivable Planet",
+			"color": "Red",
+			"showable": true
+		},
+		"outter": {
+			"inner": {
+				"pro": "Outer-Innner-pro"
+			}
+		},
+		"texts": [
+			{
+				"sentence": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Minus, unde?",
+				"percentage": 45,
+				"per": 45.3,
+				"pork": 45.3
+			},
+			{
+				"sentence": "Lorem ipsum dolor sit amet",
+				"percentage": 45,
+				"per": 45.3,
+				"pork": 45.3
+			},
+			{
+				"sentence": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Minus, unde?",
+				"percentage": 45,
+				"per": 45.3,
+				"pork": 45.3
+			},
+			{
+				"sentence": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Minus, unde?",
+				"percentage": 45,
+				"per": 45.3,
+				"pork": 45.3
+			},
+			{
+				"sentence": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Minus, unde?",
+				"percentage": 45,
+				"per": 45.3,
+				"pork": 45.3
+			},
+			{
+				"sentence": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Reprehenderit molestiae iusto in incidunt illum eos!",
+				"percentage": 45,
+				"per": 45.3,
+				"pork": 45.3
+			},
+			{
+				"sentence": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Minus, unde?",
+				"percentage": 45,
+				"per": 45.3,
+				"pork": 45.3
+			}
+		],
+		"doSomthing": "Command",
+		"porkNumber": 45
+	}
+}

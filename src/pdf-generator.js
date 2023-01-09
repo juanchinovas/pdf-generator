@@ -45,7 +45,7 @@ class PdfGenerator {
 	 */
 
 	async #init(options) {
-		if (!options.URL_BROWSER) {
+		if (!options.browserUrl) {
 			throw new Error("No target browser found");
 		}
 
@@ -54,8 +54,8 @@ class PdfGenerator {
 				this.#browserStarted = true;
 				this.#logger.writeLog({ text: "Launching Browser", type: "LOG" });
 				this.#puppeteer.launch({
-					executablePath: options.URL_BROWSER,
-					product: options.BROWSER_NAME
+					executablePath: options.browserUrl,
+					product: options.browserName
 				}).then(instance => this.#browser = instance);
 			}
 
@@ -131,7 +131,7 @@ class PdfGenerator {
 				let _footerHTML = await this.#__getFooterTemplateFromTemplate(page, options);
 				let _headerHTML = await this.#__getHeaderTemplateFromTemplate(page, options);
 				const pdfOptions = {
-					path: `${options.PDF_DIR}/${tempFile.fileName}.pdf`,
+					path: `${options.pdfDir}/${tempFile.fileName}.pdf`,
 					format: options.paperFormat ?? "Letter",
 					printBackground: true,
 					displayHeaderFooter: true,
@@ -147,6 +147,7 @@ class PdfGenerator {
 					height: options.height,
 					width: options.width
 				};
+				page.addStyleTag({ "content": "@media print { #app { page-break-after: always; }}" });
 				if (tempFile.orientation === "horizontal") {
 					pdfOptions.landscape = true;
 					page.addStyleTag({ "content": "@page { size: A4 landscape; }" });
@@ -183,7 +184,7 @@ class PdfGenerator {
 				templateBuffer = Buffer.from(await page.content(), "utf8");
 			}
 
-			fileHelper.deleteFile(`${options.FILE_DIR}/${tempFile.fileName}.html`);
+			fileHelper.deleteFile(`${options.fileDir}/${tempFile.fileName}.html`);
 			return ({ totalPages, fileName: `${tempFile.fileName}.pdf`, buffer: templateBuffer, templateType });
 		} catch (err) {
 			this.#logger.writeLog({ text: err.stack, type: "ERROR" });
@@ -311,13 +312,12 @@ class PdfGenerator {
 	 */
 	async #__getHeaderTemplateFromTemplate(page, options, pageHeaderId = "#page-header") {
 		try {
-			return await page.$eval(pageHeaderId, (ele, _options) => {
+			return await page.$eval(pageHeaderId, (ele, {printingMarginTop}) => {
 				const outerHTML = ele.outerHTML;
 				ele.style.display = "none";
-
 				return ({
 					headerTemplate: outerHTML,
-					marginTop: ele.dataset.marginTop || _options.printingMarginTop
+					marginTop: ele.dataset.marginTop || printingMarginTop
 				});
 
 			}, options);
@@ -335,12 +335,12 @@ class PdfGenerator {
 		}
 
 		const {
-			BROWSER_NAME = "chrome",
-			URL_BROWSER,
-			FILE_DIR,
-			PDF_DIR,
-			PORT,
-			TEMPLATE_DIR,
+			browserName = "chrome",
+			browserUrl,
+			fileDir = "./temp",
+			pdfDir = "./temp/pdfs",
+			port,
+			templateDir,
 			printingMarginTop = "2.54cm",
 			printingMarginBottom = "2.54cm",
 			printingMarginLeft = "2.54cm",
@@ -353,18 +353,18 @@ class PdfGenerator {
 		} = options;
 
 		const _options = {
-			BROWSER_NAME,
-			URL_BROWSER,
-			FILE_DIR,
-			PDF_DIR,
-			PORT,
-			TEMPLATE_DIR,
+			browserName,
+			browserUrl,
+			fileDir,
+			pdfDir,
+			port,
+			templateDir,
 			printingMarginTop,
 			printingMarginBottom,
 			printingMarginLeft,
 			printingMarginRight,
 			libs,
-			templateServerUrl: `${templateServerUrl}${(PORT && (":" + PORT)) || ""}`,
+			templateServerUrl: `${templateServerUrl}${(port && (":" + port)) || ""}`,
 			height, width,
 			paperFormat,
 			pdfMergeDelegator
@@ -381,7 +381,7 @@ class PdfGenerator {
 				let msgs = message.args()
 					.map(m => {
 						if (m && m._remoteObject.preview && m._remoteObject.preview.subtype !== "error") {
-							const obj = m._remoteObject.preview.properties.reduce((a, i) => (a[i.name] = i.value, a), {});
+							const obj = m._remoteObject.preview.properties.reduce((obj, prop) => (obj[prop.name] = prop.value, obj), {});
 							return JSON.stringify(obj, null, 2);
 						}
 						if (m && m._remoteObject.description) {

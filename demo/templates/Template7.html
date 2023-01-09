@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>Template #7</title>
+	<style>
+		p {
+			text-align: justify;
+		}
+	</style>
+</head>
+
+<body>
+	<main id="app">
+		<header class="header">
+			<section id="page-header">
+				<div>
+					<label>I'm in the header of page</label>
+				</div>
+				<v-style>
+					#page-header {
+						padding: 2.1em 2cm;
+						margin-top: -.4cm;
+						display: flex;
+						align-items: center;
+						width: 100%;
+						justify-content: flex-end;
+						background-color: violet;
+						color: #fff;
+						font-size: 12px;
+					}
+	
+					#page-header > div {
+						display: flex;
+						flex-direction: column;
+						justify-content: flex-end;
+						text-align: right;
+					}
+				</v-style>
+			</section>
+		</header>
+
+		<p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Modi expedita esse eligendi a sed, corrupti tenetur
+			iusto quae facere sint rerum quidem labore nostrum beatae cupiditate possimus mollitia vel sapiente?</p>
+		<p>
+			Lorem ipsum dolor sit amet consectetur adipisicing elit. {{ultimatum}}
+		</p>
+		<h2>Name list of {{listName}}</h2>
+		<ul>
+			<li v-for="name in names">{{name}}</li>
+		</ul>
+		<h2>List of something</h2>
+		<ul>
+			<li v-for="animal in animals">
+				<span>{{animal.name}}</span>
+				is a <span>{{animal.type}}</span>
+			</li>
+		</ul>
+		<p>
+			The word is {{info.worldType}} but the men turn it into a {{info.turned}} so chocking. Now the planet's
+			color is {{info.color}}.
+		</p>
+		<p v-if="info.showable">I'm only visible coz' I can</p>
+		<p v-if="doSomthing">Running a errang. {{outter.inner.pro}}</p>
+		<h1>Sentences list</h1>
+		<p v-for="text of texts">
+			<span v-if="text.percentage">{{text.sentence}}</span>
+			<span v-if="text.percentage > 50">{{text.sentence}}</span>
+			<span v-if="Number(text.percentage) > 50">{{text.sentence}}</span>
+			<span v-show="Number(text.per) < 50">{{text.sentence}}</span>
+			<span v-show="Number(text.pork) === porkNumber">{{text.sentence}}</span>
+		</p>
+	</main>
+</body>
+
+</html>

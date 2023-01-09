@@ -12,7 +12,7 @@ global.document = {
 
 describe("pdf-generator", () => {
 	let options = {
-		URL_BROWSER: "/dir/browser"
+		browserUrl: "/dir/browser"
 	};
 	let templateInfo = {};
 	let puppeteer;
@@ -130,7 +130,7 @@ describe("pdf-generator", () => {
 		it("should launch the browser instance", async () => {
 			await pdfGeneratorInstance.processTemplate({});
 			expect(puppeteer.launch).toHaveBeenCalledWith({
-				executablePath: options.URL_BROWSER,
+				executablePath: options.browserUrl,
 				product: "chrome"
 			});
 			expect(logger.writeLog).toHaveBeenCalled();
@@ -238,7 +238,7 @@ describe("pdf-generator", () => {
 
 		it("creates pdf with PdfMergeDelegator will merge pdf array into one", async () => {
 			const options = {
-				URL_BROWSER: "/dir/browser",
+				browserUrl: "/dir/browser",
 				pdfMergeDelegator: {
 					merge: jest.fn(() => Promise.resolve(Buffer.from("test pdf"))),
 					getPdfTotalPages: jest.fn(() => Promise.resolve(1)),
@@ -262,8 +262,8 @@ describe("pdf-generator", () => {
 
 		it("creates pdf with PdfMergeDelegator and save the file", async () => {
 			const options = {
-				URL_BROWSER: "/dir/browser",
-				PDF_DIR: "/dir/pdf",
+				browserUrl: "/dir/browser",
+				pdfDir: "/dir/pdf",
 				pdfMergeDelegator: {
 					merge: jest.fn(() => Promise.resolve(Buffer.from("test pdf"))),
 					getPdfTotalPages: jest.fn(() => Promise.resolve(3)),
@@ -286,8 +286,8 @@ describe("pdf-generator", () => {
 
 		it("creates pdf with PdfMergeDelegator and save file fail", async () => {
 			const options = {
-				URL_BROWSER: "/dir/browser",
-				PDF_DIR: "/dir/pdf",
+				browserUrl: "/dir/browser",
+				pdfDir: "/dir/pdf",
 				pdfMergeDelegator: {
 					merge: jest.fn(() => Promise.resolve(Buffer.from("test pdf"))),
 					getPdfTotalPages: jest.fn(() => Promise.resolve(3)),
@@ -312,8 +312,8 @@ describe("pdf-generator", () => {
 
 		it("throws when create pdf with custom header and footer and page pdf fail", async () => {
 			const options = {
-				URL_BROWSER: "/dir/browser",
-				PORT: 100
+				browserUrl: "/dir/browser",
+				port: 100
 			};
 			templateInfo = {
 				fileName: "test_5",
@@ -338,10 +338,10 @@ describe("pdf-generator", () => {
 
 		it("should fallback to default footer when page eval fails", async () => {
 			const options = {
-				URL_BROWSER: "/dir/browser",
-				PORT: 50,
+				browserUrl: "/dir/browser",
+				port: 50,
 				paperFormat: "A5",
-				PDF_DIR: "/dir"
+				pdfDir: "/dir"
 			};
 			templateInfo = {
 				fileName: "test_5"
@@ -384,9 +384,9 @@ describe("pdf-generator", () => {
 
 		it("should fallback to default header when page eval fails", async () => {
 			const options = {
-				URL_BROWSER: "/dir/browser",
-				PORT: 50,
-				PDF_DIR: "/dir"
+				browserUrl: "/dir/browser",
+				port: 50,
+				pdfDir: "/dir"
 			};
 			templateInfo = {
 				fileName: "test_5"
@@ -427,7 +427,7 @@ describe("pdf-generator", () => {
 		describe("Page events", () => {
 			beforeEach(() => {
 				options = {
-					URL_BROWSER: "/dir/browser"
+					browserUrl: "/dir/browser"
 				};
 			});
 

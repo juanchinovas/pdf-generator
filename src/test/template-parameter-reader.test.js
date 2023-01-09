@@ -48,5 +48,27 @@ describe("template-parameter-reader", () => {
 				names: [{}],
 			});
 		});
+
+		it("returns complete template parameters correctly when inner object param are used", () => {
+			expect(templateReader.getParametersFrom(`
+				<p>{{list.item.name}}<p>
+				<p v-for="name of names">{{name}}<p>
+				<p v-for="animal in animals">
+					<span>{{animal.name}}</span>
+				<p>
+				<p>{{date}}<p>
+			`)).toEqual({
+				animals: [{
+					name: "{{name}}"
+				}],
+				date: "{{date}}",
+				list: {
+					item: {
+						name: {}
+					}
+				},
+				names: [{}],
+			});
+		});
 	});
 });

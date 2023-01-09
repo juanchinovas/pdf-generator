@@ -1,7 +1,7 @@
 const compression = require("compression");
 const express = require("express");
 const bodyParser = require("body-parser");
-const pdfProcessor = require("html-pdf-generator");
+const pdfProcessor = require("@sunacchi/pdf-generator");
 const pdfMergeDelegator = require("./pdfMergeDelegator");
 const fs = require("fs");
 
@@ -16,14 +16,14 @@ const {
 } = process.env;
 
 let pdfGenerator = pdfProcessor.pdfGeneratorInstance({
-    BROWSER_NAME,
-    URL_BROWSER,
-    FILE_DIR,
-    PDF_DIR,
-    PORT,
-    TEMPLATE_DIR,
+    browserName: BROWSER_NAME,
+    browserUrl: URL_BROWSER,
+    fileDir: FILE_DIR,
+    pdfDir: PDF_DIR,
+    port: PORT,
+    templateDir: TEMPLATE_DIR,
     libs: ['/misc/footer-component.js', '/misc/testComponent.js', '/misc/mixin.js'],
-    pdfMergeDelegator
+    pdfMergeDelegator,
 });
 const host = `http://localhost:${PORT}`;
 
@@ -188,8 +188,14 @@ app.listen(PORT, () =>
     console.log(`Example app listening at ${host}`)
 );
 
-process.on("exit", function (code) {
-    console.log(`About to exit with code: ${code}`);
+process.on("uncaughtException", function (err) {
+    console.log(`About to exit with code: ${err}`);
     pdfGenerator && pdfGenerator.dispose();
     pdfGenerator = null;
+	process.exit(1);
+});
+
+process.on("exit", function () {
+	console.log("Process exited")
+    pdfGenerator && pdfGenerator.dispose();
 });
