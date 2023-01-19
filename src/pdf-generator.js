@@ -5,17 +5,19 @@ class PdfGenerator {
 	#options;
 	#logger;
 	#templateHelper;
+	#pdfMergeDelegator;
 	#fileHelper;
 	#puppeteer;
 	#pageEvents;
 
-	constructor(options, logger, templateHelper, fileHelper, puppeteer) {
+	constructor(options, logger, pdfMergeDelegator, templateHelper, fileHelper, puppeteer) {
 		this.#browserStarted = false;
 		[this.#options, this.#pageEvents] = this.#initialize(options);
 		this.#logger = logger;
 		this.#templateHelper = templateHelper;
 		this.#fileHelper = fileHelper;
 		this.#puppeteer = puppeteer;
+		this.#pdfMergeDelegator = pdfMergeDelegator;
 	}
 
 	async processTemplate(data) {
@@ -23,7 +25,7 @@ class PdfGenerator {
 		return this.#generatePdfFromTemplate({
 			page,
 			data,
-			pdfMergeDelegator: this.#options.pdfMergeDelegator,
+			pdfMergeDelegator: this.#pdfMergeDelegator,
 			options: this.#options,
 			templateHelper: this.#templateHelper,
 			fileHelper: this.#fileHelper
@@ -49,14 +51,20 @@ class PdfGenerator {
 			throw new Error("No target browser found");
 		}
 
-		return new Promise((res) => {
+		return new Promise(async (res) => {
 			if (!this.#browserStarted && !this.#browser) {
 				this.#browserStarted = true;
 				this.#logger.writeLog({ text: "Launching Browser", type: "LOG" });
-				this.#puppeteer.launch({
-					executablePath: options.browserUrl,
-					product: options.browserName
-				}).then(instance => this.#browser = instance);
+				for (let i = 0; i < 3; i++) {
+					this.#browser = await this.#puppeteer.launch({
+						executablePath: options.browserUrl,
+						product: options.browserName
+					}).catch((err) => {
+						this.logger.writeLog({ text: err?.message ?? err, type: "ERROR" });
+					});
+					if (this.#browser) break;
+					this.logger.writeLog({ text: `Launching headless browser try: ${i+1}`, type: "LOG" });
+				}
 			}
 
 			const intervalCode = setInterval(async () => {
@@ -123,31 +131,31 @@ class PdfGenerator {
 			}
 
 			this.#logger.writeLog({ text: `Loading ${urlTemplate}`, type: "LOG" });
-			await page.goto(urlTemplate, { waitUntil: "networkidle0" });
+			await page.goto(urlTemplate, { waitUntil: "domcontentloaded" });
 
 			if (tempFile.previewHTML !== true) {
 				this.#logger.writeLog({ text: "Creating PDF", type: "LOG" });
-
+/*
 				let _footerHTML = await this.#__getFooterTemplateFromTemplate(page, options);
 				let _headerHTML = await this.#__getHeaderTemplateFromTemplate(page, options);
+				*/
 				const pdfOptions = {
 					path: `${options.pdfDir}/${tempFile.fileName}.pdf`,
-					format: options.paperFormat ?? "Letter",
+					format: options.paperFormat,
 					printBackground: true,
 					displayHeaderFooter: true,
-					footerTemplate: _footerHTML.footerTemplate,
-					headerTemplate: _headerHTML.headerTemplate,
+					/*footerTemplate: _footerHTML.footerTemplate,
+					headerTemplate: _headerHTML.headerTemplate,*/
 					preferCSSPageSize: tempFile.preferCssPage ?? false,
 					margin: {
-						top: _headerHTML.marginTop,
-						bottom: _footerHTML.marginBottom,
+						/*top: _headerHTML.marginTop,
+						bottom: _footerHTML.marginBottom,*/
 						left: options.printingMarginLeft,
 						right: options.printingMarginRight
 					},
 					height: options.height,
 					width: options.width
 				};
-				page.addStyleTag({ "content": "@media print { #app { page-break-after: always; }}" });
 				if (tempFile.orientation === "horizontal") {
 					pdfOptions.landscape = true;
 					page.addStyleTag({ "content": "@page { size: A4 landscape; }" });
@@ -159,26 +167,28 @@ class PdfGenerator {
 					this.#logger.writeLog({ text: "Deleting pdf path for preview pdf request", type: "LOG" });
 				}
 
-				({ buffer: templateBuffer, totalPages } = await this.#resolvePdfTotalPage({
+				totalPages = await this.#resolvePdfTotalPage({
 					page,
 					pdfOptions,
-					pdfMergeDelegator,
-					fileHelper
-				}));
+					fileHelper,
+					page,
+					options,
+					logger: this.#logger,
+					fileHelper,
+					tempFile
+				});
 
 				// Generate pdf with custom header y footer 
-				if (tempFile.customPagesHeaderFooter) {
-					[templateBuffer, templateType] = await this.#generatePdfWithCustomHeaderAndFooter({
-						pdfOptions,
-						logger: this.#logger,
-						pdfMergeDelegator,
-						tempFile,
-						fileHelper,
-						totalPages,
-						options,
-						page
-					});
-				}
+				[templateBuffer, templateType] = await this.#generatePdfWithCustomHeaderAndFooter({
+					pdfOptions,
+					logger: this.#logger,
+					pdfMergeDelegator,
+					tempFile,
+					fileHelper,
+					totalPages,
+					options,
+					page
+				});
 			} else {
 				templateType = "text/html";
 				templateBuffer = Buffer.from(await page.content(), "utf8");
@@ -201,23 +211,28 @@ class PdfGenerator {
 	 */
 	async #generatePdfWithCustomHeaderAndFooter({ tempFile, pdfOptions, pdfMergeDelegator, fileHelper, logger, totalPages, options, page }) {
 		const pdfChunks = [];
-		for (const pageIndex in tempFile.customPagesHeaderFooter) {
-			const pageHeaderFooterId = tempFile.customPagesHeaderFooter[pageIndex];
-			const _pdfOptions = { ...pdfOptions };
-
-			const _headerHTML = await this.#__getHeaderTemplateFromTemplate(page, options, `#header-page-${pageHeaderFooterId}`);
-			const _footerHTML = await this.#__getFooterTemplateFromTemplate(page, options, `#footer-page-${pageHeaderFooterId}`);
-
-			_pdfOptions.footerTemplate = _footerHTML.footerTemplate;
-			_pdfOptions.headerTemplate = _headerHTML.headerTemplate;
-
+		const headerFooterByPage = tempFile.customPagesHeaderFooter ?? [];
+		for (const pageIndex in headerFooterByPage) {
+			const pageHeaderFooterId = headerFooterByPage[pageIndex];
+			const headerId = (pageHeaderFooterId && `#header-page-${pageHeaderFooterId}`) || undefined;
+			const footerId = (pageHeaderFooterId && `#footer-page-${pageHeaderFooterId}`) || undefined;
+			const _headerHTML = await this.#__getHeaderTemplateFromTemplate(page, options, headerId);
+			const _footerHTML = await this.#__getFooterTemplateFromTemplate(page, options, footerId);
+			const _pdfOptions = {
+				...pdfOptions,
+				footerTemplate: _footerHTML.footerTemplate,
+				headerTemplate: _headerHTML.headerTemplate 
+			};
+	
 			_pdfOptions.margin.top = _headerHTML.marginTop;
 			_pdfOptions.margin.bottom = _footerHTML.marginBottom;
 
-			_pdfOptions.pageRanges = pageHeaderFooterId.replace(/last|penult|first/g, (x) => {
-				return x === "first" ? 1 :
-					x === "penult" ? totalPages - 1 : totalPages;
-			});
+			if (totalPages && pageHeaderFooterId) {
+				_pdfOptions.pageRanges = pageHeaderFooterId.replace(/last|penult|first/g, (x) => {
+					return x === "first"  ? 1 :
+						   x === "penult" ? totalPages - 1 : totalPages;
+				});
+			}
 
 			try {
 				pdfChunks.push(await page.pdf(_pdfOptions));
@@ -231,7 +246,7 @@ class PdfGenerator {
 		pdfOptions.path && fileHelper.deleteFile(pdfOptions.path);
 
 		if (pdfMergeDelegator) {
-			templateBuffer = await pdfMergeDelegator.merge(pdfChunks);
+			templateBuffer = await pdfMergeDelegator.merge(pdfChunks, tempFile.metadata);
 			templateType = "application/pdf";
 			pdfOptions.path && await fileHelper.saveFile(pdfOptions.path, templateBuffer).catch(err => {
 				logger.writeLog({ text: err, type: "ERROR" });
@@ -248,31 +263,30 @@ class PdfGenerator {
 	 * 
 	 * @returns Promise<Buffer>
 	 */
-	#resolvePdfTotalPage({ page, pdfOptions, pdfMergeDelegator, fileHelper }) {
-		return page.pdf(pdfOptions)
-			.then(async (buffer) => {
-				if (pdfMergeDelegator) {
-					pdfOptions.path && fileHelper.deleteFile(pdfOptions.path); // Delete the previous pdf
-					const totalPages = await pdfMergeDelegator.getPdfTotalPages(buffer);
+	async #resolvePdfTotalPage({ page, pdfOptions, options, logger, fileHelper, tempFile }) {
+		const [templateBuffer] = await this.#generatePdfWithCustomHeaderAndFooter({
+			pdfOptions,
+			logger,
+			tempFile,
+			fileHelper,
+			options,
+			page
+		});
 
-					return await page.$eval("body", (body, totalPages) => {
-						// eslint-disable-next-line
-						const script = document.createElement("script");
-						// eslint-disable-next-line
-						const text = document.createTextNode(`
-                    reactiveInstance.extraParams['totalPages'] = ${totalPages};
-                `);
+		const totals = await Promise.all(templateBuffer.map(buff => this.#pdfMergeDelegator.getPdfTotalPages(buff)));
+		const totalPages = Math.ceil(totals.reduce((sumTotal, total) => sumTotal + total, 0) / totals.length);
+		console.log({ totals, totalPages });
+		await page.$eval("body", (body, totalPagesParam) => {
+			// eslint-disable-next-line
+			const script = document.createElement("script");
+			// eslint-disable-next-line
+			const text = document.createTextNode(`updateTotalPages(${totalPagesParam});`);
 
-						script.appendChild(text);
-						body.appendChild(script);
-					}, totalPages)
-						.then(async () => {
-							return { buffer: await page.pdf(pdfOptions), totalPages };
-						});
-				}
+			script.appendChild(text);
+			body.appendChild(script);
+		}, totalPages);
 
-				return { buffer, totalPages: 0 };
-			});
+		return totalPages;
 	}
 
 	/**
@@ -282,6 +296,7 @@ class PdfGenerator {
 	async #__getFooterTemplateFromTemplate(page, options, pageFooterId = "#page-footer") {
 		try {
 			return await page.$eval(pageFooterId, (ele, _options) => {
+				ele.style.display = "";
 				const outerHTML = ele.outerHTML;
 				ele.style.display = "none";
 
@@ -293,7 +308,7 @@ class PdfGenerator {
 			}, options);
 
 		} catch (error) {
-			this.#logger.writeLog({ text: error.message + ". No footer template found", type: "WARN" });
+			this.#logger.writeLog({ text: `${error.message}. No footer template found`, type: "WARN" });
 		}
 
 		return ({
@@ -313,6 +328,7 @@ class PdfGenerator {
 	async #__getHeaderTemplateFromTemplate(page, options, pageHeaderId = "#page-header") {
 		try {
 			return await page.$eval(pageHeaderId, (ele, {printingMarginTop}) => {
+				ele.style.display = "";
 				const outerHTML = ele.outerHTML;
 				ele.style.display = "none";
 				return ({
@@ -323,7 +339,7 @@ class PdfGenerator {
 			}, options);
 
 		} catch (error) {
-			this.#logger.writeLog({ text: error.message + ". No header template found", type: "WARN" });
+			this.#logger.writeLog({ text: `${error.message}. No header template found`, type: "WARN" });
 		}
 
 		return ({ headerTemplate: "<span></span>", marginTop: options.printingMarginTop });
@@ -348,8 +364,7 @@ class PdfGenerator {
 			libs,
 			templateServerUrl = "http://localhost",
 			height, width,
-			paperFormat,
-			pdfMergeDelegator
+			paperFormat = "Letter"
 		} = options;
 
 		const _options = {
@@ -366,8 +381,7 @@ class PdfGenerator {
 			libs,
 			templateServerUrl: `${templateServerUrl}${(port && (":" + port)) || ""}`,
 			height, width,
-			paperFormat,
-			pdfMergeDelegator
+			paperFormat
 		};
 
 		const pageEvents = {

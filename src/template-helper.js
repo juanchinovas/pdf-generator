@@ -77,12 +77,12 @@ class TemplateHelper {
 				.readFile(`${options.templateDir}/${data.$templateName}.html`)
 				.then(templateData => templateData.toString("utf8"))
 				.then(async (template) => {
-					let orientation, previewHTML, preview, customPagesHeaderFooter;
+					let orientation, previewHTML, preview, customPagesHeaderFooter = [""];
 
 					if (!("noData" in data)) {
-						var param = this.#templateParameterReader.getParametersFrom(template);
+						const param = this.#templateParameterReader.getParametersFrom(template);
 						let templateParts = template.split(/<\/body>\n*(<\/html>)*/gm);
-						const extraParams = data.$extraParams || {};
+						const extraParams = data.$extraParams ?? {};
 
 						param.extraParams = extraParams;
 						param.extraParams.totalPages = 0;
@@ -91,13 +91,13 @@ class TemplateHelper {
 						orientation = extraParams.orientation;
 						previewHTML = extraParams.previewHTML;
 						preview = extraParams.preview;
-						customPagesHeaderFooter = extraParams.customPagesHeaderFooter;
+						customPagesHeaderFooter = extraParams.customPagesHeaderFooter ?? customPagesHeaderFooter;
 
 						templateParts.push(options.libs.map(s => s.script ?? `<script src="${s}"></script>`).join("\n"));
 						templateParts.push(`<script>
                         window.onload = function () {
                             const [App, elemId] = initVue(${JSON.stringify(Object.assign(param, data.$parameters))});
-                            reactiveInstance = elemId ? App.mount(elemId) : new Vue(App);
+                            reactiveInstance = elemId ? (App.mount(elemId), App) : new Vue(App);
                         }
                     </script>`);
 						templateParts.push("</body></html>");
@@ -110,7 +110,13 @@ class TemplateHelper {
 						orientation,
 						previewHTML,
 						preview,
-						customPagesHeaderFooter
+						customPagesHeaderFooter,
+						metadata: {
+							title: data?.$extraParams?.metadata?.title ?? data.$templateName,
+							author: data?.$extraParams?.metadata?.author ?? "",
+							summary: data?.$extraParams?.metadata?.summary ?? "",
+							keywords: data?.$extraParams?.metadata?.keywords
+						}
 					});
 				})
 				.catch(rej);

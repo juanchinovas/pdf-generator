@@ -2,7 +2,6 @@ const compression = require("compression");
 const express = require("express");
 const bodyParser = require("body-parser");
 const pdfProcessor = require("@sunacchi/pdf-generator");
-const pdfMergeDelegator = require("./pdfMergeDelegator");
 const fs = require("fs");
 
 const app = express();
@@ -23,7 +22,6 @@ let pdfGenerator = pdfProcessor.pdfGeneratorInstance({
     port: PORT,
     templateDir: TEMPLATE_DIR,
     libs: ['/misc/footer-component.js', '/misc/testComponent.js', '/misc/mixin.js'],
-    pdfMergeDelegator,
 });
 const host = `http://localhost:${PORT}`;
 
@@ -61,7 +59,7 @@ app.get("/test-pdf/:templateName", (req, res) => {
                 res.send(processed.buffer);
             })
             .catch(err => {
-                res.status(400).send({ message: err, code: -15 });
+                res.status(400).send({ message: err?.message ?? err, code: -15 });
             });
     } catch (err) {
         res.status(400).send({ message: err.message, code: -16 });

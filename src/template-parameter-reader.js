@@ -20,7 +20,8 @@ class TemplateParameterReader {
 					objResult[key] = [this.#getObjectParams(matches, template)];
 					unWantedkeys.set(matches[1], key);
 				} else if (parent && child) {
-					objResult[parent] = objResult[parent] ?? {};
+					const isAlreadySetAsStringOrUnset = (typeof objResult[parent]) === "string" || !objResult[parent];
+					objResult[parent] = isAlreadySetAsStringOrUnset ? {} : objResult[parent];
 					if (rest && rest.length) {
 						objResult[parent][child] = rest.reduce(([obj, old], item) => {
 							if (!obj[item]) {
@@ -32,7 +33,9 @@ class TemplateParameterReader {
 					}
 					objResult[parent][child] = `{{${child}}}`;
 				} else if (!child && isNaN(parent)) {
-					objResult[parent] = `{{${parent}}}`;
+					if (!objResult[parent]){
+						objResult[parent] = `{{${parent}}}`;
+					}
 				}
 			}
 		}

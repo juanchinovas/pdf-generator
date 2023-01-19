@@ -11,7 +11,7 @@
     "publish": "npm run lint && npm run pack && cd ../compiled/ && npm run run-publish",
     "test": "jest",
     "config-dev": "npm i && npm run config",
-	"lint": "eslint ."
+    "lint": "eslint ."
   },
   "keywords": [
     "pdf",
@@ -37,10 +37,11 @@
     "url": "https://github.com/juanchinovas/pdf-generator/issues"
   },
   "publishConfig": {
-	"access": "public"
+    "access": "public"
   },
   "homepage": "https://github.com/juanchinovas/pdf-generator",
   "dependencies": {
+    "pdf-lib": "^1.17.1",
     "puppeteer-core": "^5.2.1"
   },
   "devDependencies": {

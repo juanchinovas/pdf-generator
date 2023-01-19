@@ -5,6 +5,11 @@ Vue.component = Vue.component ?? function (name, componentInfo) {
 	window.__customComponents.push({ name, componentInfo });
 };
 
+function updateTotalPages(total) {
+	const extraParams = reactiveInstance.config?.globalProperties.extraParams ?? reactiveInstance.extraParams;
+	extraParams.totalPages = total;
+};
+
 function initVue(templateData) {
 	const vueFactory = ((Vue.createApp && initVue3) || initVue2);
 	return vueFactory({
@@ -26,8 +31,9 @@ function initVue2(vueInit) {
 	return [vueInit];
 }
 
-function initVue3(vueInit) {
-	const app = Vue.createApp(vueInit)
+function initVue3({data: dataFn, el, ...rest}) {
+	const {extraParams, ...allProps} = dataFn();
+	const app = Vue.createApp({...rest, data: () => allProps })
 		.component("v-style", {
 			setup: (_, { slots }) => {
 				return () => Vue.h("style", [
@@ -36,7 +42,8 @@ function initVue3(vueInit) {
 				]);
 			}
 		});
+	app.config.globalProperties.extraParams = Vue.reactive(extraParams);
 
 	window.__customComponents?.forEach(({ name, componentInfo }) => app.component(name, componentInfo));
-	return [app, vueInit.el];
+	return [app, el];
 }
